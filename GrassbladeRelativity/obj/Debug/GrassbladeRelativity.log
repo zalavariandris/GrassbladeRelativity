@@ -1,0 +1,14 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: The intermediate directory (obj\Debug\) contains files shared from another project (openFrameworksApp11.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  Path.cpp
+  Segment.cpp
+c:\users\andris\source\repos\grassbladerelativity\grassbladerelativity\src\paper\curve.h(13): warning C4305: 'initializing': truncation from 'double' to 'const float' (compiling source file src\Paper\Path.cpp)
+c:\users\andris\source\repos\grassbladerelativity\grassbladerelativity\src\paper\path.cpp(10): error C2039: 'push': is not a member of 'std::vector<Segment,std::allocator<_Ty>>'
+          with
+          [
+              _Ty=Segment
+          ]
+  c:\users\andris\source\repos\grassbladerelativity\grassbladerelativity\src\paper\path.h(8): note: see declaration of 'std::vector<Segment,std::allocator<_Ty>>'
+          with
+          [
+              _Ty=Segment
+          ]
