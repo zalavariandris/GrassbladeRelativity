@@ -5,7 +5,7 @@
 #include "Im2D/im2d_draw.h"
 
 #include "Paper/Curve.h"
-
+#include "Paper/Path.h"
 class GrassbladeRelativity
 {
 public:
@@ -57,9 +57,8 @@ public:
 		static glm::vec2 C{ 200, 200 };
 		static glm::vec2 D{ 300, 300 };
 
-		Im2D::DragBezierSegment("segment3", &A, &B, &C, &D);
+		Im2D::DragBezierSegment("Curve", &A, &B, &C, &D);
 		glm::vec2 mousePos = Im2D::GetMousePos();
-
 
 		//
 		Curve curve{ A, B, C, D };
@@ -67,12 +66,18 @@ public:
 		auto Q = curveToRect(curve, uv);
 		Im2D::DragPoint("Q", &Q);
 
+		//
+		Path path;
+		path.add(glm::vec2(30, 75));
+		path.add(Segment(glm::vec2(100, 20), glm::vec2(-50, 0), glm::vec2(50, 0)));
+		path.add(glm::vec2(170, 75));
 
 		Im2D::ViewerEnd();
 		ImGui::End();
 
 		ofSetColor(ofColor::black);
 		curve.draw();
+		path.draw();
 
 		ofSetColor(ofColor::green);
 		for (int i = 0; i < 10; i++) {

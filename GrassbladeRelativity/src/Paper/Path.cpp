@@ -8,3 +8,6 @@ void Path::add(glm::vec2 point) {
 	add(Segment(point));
 }
 
+void Path::draw() {
+
+}
