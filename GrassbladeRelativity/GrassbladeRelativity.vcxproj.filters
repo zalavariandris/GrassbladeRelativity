@@ -7,42 +7,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseEngine.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseTheme.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineGLFW.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineOpenGLES.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.cpp">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_demo.cpp">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_draw.cpp">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_widgets.cpp">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="src\Im2D\Im2D.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -57,6 +21,18 @@
     </ClCompile>
     <ClCompile Include="src\Paper\Path.cpp" />
     <ClCompile Include="src\Paper\Segment.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_demo.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_draw.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseEngine.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseTheme.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineGLFW.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineOpenGLES.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp" />
+    <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -82,54 +58,6 @@
     <ClInclude Include="src\ofApp.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseEngine.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseTheme.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineGLFW.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineOpenGLES.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\imconfig.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h">
-      <Filter>addons\ofxImGui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.h">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_internal.h">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_rectpack.h">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_textedit.h">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_truetype.h">
-      <Filter>addons\ofxImGui\libs\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="src\Im2D\Im2D.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -147,6 +75,22 @@
     </ClInclude>
     <ClInclude Include="src\Paper\Path.h" />
     <ClInclude Include="src\Paper\Segment.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_internal.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_rectpack.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_textedit.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_truetype.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseEngine.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\BaseTheme.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineGLFW.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineOpenGLES.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\imconfig.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
+    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

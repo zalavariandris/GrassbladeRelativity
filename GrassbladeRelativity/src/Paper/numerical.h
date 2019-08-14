@@ -1,5 +1,4 @@
-﻿
-
+﻿#pragma once
 /*
 ported from paperjs, numerical.js
 */
@@ -23,6 +22,58 @@ ported from paperjs, numerical.js
   * @private
   */
 namespace Numerical {
+// Constants
+/**
+	* A very small absolute value used to check if a value is very close to
+	* zero. The value should be large enough to offset any floating point
+	* noise, but small enough to be meaningful in computation in a nominal
+	* range (see MACHINE_EPSILON).
+	*
+	* http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+	* http://www.cs.berkeley.edu/~wkahan/Math128/Cubic.pdf
+	*/
+
+	extern double EPSILON;
+
+	/**
+	* The machine epsilon for a double precision (Javascript Number) is
+	* 2.220446049250313e-16. (try this in the js console:
+	*     (function(){ for (var e = 1; 1 < 1+e/2;) e/=2; return e }())
+	*
+	* The constant MACHINE_EPSILON here refers to the constants δ and ε
+	* such that, the error introduced by addition, multiplication on a
+	* 64bit float (js Number) will be less than δ and ε. That is to say,
+	* for all X and Y representable by a js Number object, S and P be their
+	* 'exact' sum and product respectively, then
+	* |S - (x+y)| <= δ|S|, and |P - (x*y)| <= ε|P|.
+	* This amounts to about half of the actual machine epsilon.
+	*/
+
+	extern double MACHINE_EPSILON;
+
+	/**
+	* The epsilon to be used when handling curve-time parameters. This
+	* cannot be smaller, because errors add up to around 2e-7 in the bezier
+	* fat-line clipping code as a result of recursive sub-division.
+	*/
+	extern double CURVETIME_EPSILON;
+	/**
+	* The epsilon to be used when performing "geometric" checks, such as
+	* distances between points and lines.
+	*/
+	extern double GEOMETRIC_EPSILON;
+	/**
+	* The epsilon to be used when performing "trigonometric" checks, such
+	* as examining cross products to check for collinearity.
+	*/
+	extern double TRIGONOMETRIC_EPSILON;
+	/**
+	* Kappa is the value which which to scale the curve handles when
+	* drawing a circle with bezier curves.
+	*
+	* http://whizkidtech.redprince.net/bezier/circle/kappa/
+	*/
+	extern double KAPPA;
 
 	double clamp(double value, double min, double max);
 

@@ -1,6 +1,6 @@
+#include "ofMain.h" // ofDrawLine
 #include "Curve.h"
 #include "numerical.h"
-#include "ofMain.h" // ofDrawLine
 
 
 glm::vec2 Curve::getPoint(float t) {
@@ -64,7 +64,7 @@ glm::vec2 Curve::getTangent(float t, bool normalized) {
 	float ay = y3 - y0 - cy - by;
 	float x, y;
 
-	float tMin = CURVETIME_EPSILON;
+	float tMin = Numerical::CURVETIME_EPSILON;
 	float tMax = 1 - tMin;
 	if (t < tMin) {
 		x = cx;
@@ -87,7 +87,7 @@ glm::vec2 Curve::getNormal(float t, bool normalized) {
 	return glm::vec2(tangent.y, -tangent.x);
 }
 
-float Curve::getNearestTime(glm::vec2 point) {
+double Curve::getNearestTime(glm::vec2 point) {
 	/* rewritten from paper.js*/
 	const int count = 100;
 	float minDist = std::numeric_limits<float>::infinity();
@@ -111,7 +111,7 @@ float Curve::getNearestTime(glm::vec2 point) {
 	};
 
 	float step = 1.0f / (count * 2);
-	while (step > CURVETIME_EPSILON) {
+	while (step > Numerical::CURVETIME_EPSILON) {
 		if (!refine(minT - step) && !refine(minT + step)) {
 			step /= 2.0;
 		}
@@ -166,4 +166,31 @@ void Curve::draw() {
 	};
 }
 
+CurveLocation Curve::getLocationAtTime(double t) {
+	return CurveLocation(weak_from_this(), t);
+}
 
+bool isClose(glm::vec2 P, glm::vec2 Q) {
+	return glm::distance(P, Q) < Numerical::EPSILON;
+}
+
+double Curve::getTimeOf(glm::vec2 point) {
+	glm::vec2 p0 = A;
+	glm::vec2 p3 = B;
+	double t = isClose(point, p0) ? 0
+		: isClose(point, p3) ? 1
+		: NAN;
+
+	if (isnan(t)) {
+		std::vector<double> coords{ point.x, point.y };
+		std::vector<double> roots = [];
+		for (auto c = 0; c < 2; c++) {
+			auto count = Curve.solveCubic(v, c, coords[c], roots, 0, 1);
+			for (auto i = 0; i < count; i++) {
+				auto u = roots[i];
+				if (isClose(point, Curve.getPoint(v, u), Numerical::GEOMETRIC_EPSILON))
+					return u;
+			}
+		}
+	}
+}
