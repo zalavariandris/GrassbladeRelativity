@@ -320,7 +320,7 @@ double Numerical::solveQuadratic(double a, double b, double c, std::vector<doubl
 *
 * @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 */
-double Numerical::solveCubic(double a, double b, double c, double d, std::vector<double>roots, double min, double max) {
+double Numerical::solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min, double max) {
 	double f = getNormalizationFactor({ abs(a), abs(b), abs(c), abs(d) });
 	double x, b1, c2, qd, q;
 	if (f) {
@@ -330,7 +330,7 @@ double Numerical::solveCubic(double a, double b, double c, double d, std::vector
 		d *= f;
 	}
 
-	auto evaluate = [&](double x0) {
+	auto evaluate = [a, b, c, d, &b1,  &c2,  &qd,  &q,  &x](double x0) {
 		x = x0;
 		// Evaluate q, q', b1 and c2 at x
 		auto tmp = a * x;

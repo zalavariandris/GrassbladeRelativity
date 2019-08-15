@@ -168,5 +168,5 @@ namespace Numerical {
 	*
 	* @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 	*/
-	double solveCubic(double a, double b, double c, double d, std::vector<double>roots, double min = NAN, double max = NAN);
+	double solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min = NAN, double max = NAN);
 };

@@ -170,8 +170,13 @@ CurveLocation Curve::getLocationAtTime(double t) {
 	return CurveLocation(weak_from_this(), t);
 }
 
-bool isClose(glm::vec2 P, glm::vec2 Q) {
-	return glm::distance(P, Q) < Numerical::EPSILON;
+//TODO: originaly isClose is part of the point class. Check how PAPER.js handles epsilon parameter?
+bool isClose(glm::vec2 P, glm::vec2 Q, double epsilon = Numerical::EPSILON) {
+	return glm::distance(P, Q) < epsilon;
+}
+
+CurveLocation Curve::getLocationOf(glm::vec2 point) {
+	return getLocationAtTime(getTimeOf(point));
 }
 
 double Curve::getTimeOf(glm::vec2 point) {
@@ -183,14 +188,34 @@ double Curve::getTimeOf(glm::vec2 point) {
 
 	if (isnan(t)) {
 		std::vector<double> coords{ point.x, point.y };
-		std::vector<double> roots = [];
+		std::vector<double> roots;
 		for (auto c = 0; c < 2; c++) {
-			auto count = Curve.solveCubic(v, c, coords[c], roots, 0, 1);
+			//TODO: in paperjs there is a private v parameter of curve, holdin all the coordinates of the curve instead 4 points
+			// for now supply an array of the point coords, but later implement the v aparameter as in paperjs, and use that.
+			auto count = Curve::solveCubic({A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y}, c, coords[c], roots, 0, 1);
 			for (auto i = 0; i < count; i++) {
 				auto u = roots[i];
-				if (isClose(point, Curve.getPoint(v, u), Numerical::GEOMETRIC_EPSILON))
+				if (isClose(point, getPoint(u), Numerical::GEOMETRIC_EPSILON))
 					return u;
 			}
 		}
 	}
+}
+
+double Curve::solveCubic(std::vector<double> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
+	auto v0 = v[coord];
+	auto v1 = v[coord + 2];
+	auto v2 = v[coord + 4];
+	auto v3 = v[coord + 6];
+	auto res = 0;
+
+	// If val is outside the curve values, no solution is possible.
+	if (!(v0 < val && v3 < val && v1 < val && v2 < val ||
+		v0 > val && v3 > val && v1 > val && v2 > val)) {
+		auto c = 3 * (v1 - v0);
+		auto b = 3 * (v2 - v1) - c;
+		auto a = v3 - v0 - c - b;
+		res = Numerical::solveCubic(a, b, c, v0 - val, roots, minV, maxV);
+	}
+	return res;
 }

@@ -1,5 +1,5 @@
 #pragma once
-
+#include "ofMain.h"
 #include "imgui.h"
 #include "Im2D/Im2D.h"
 #include "Im2D/im2d_draw.h"

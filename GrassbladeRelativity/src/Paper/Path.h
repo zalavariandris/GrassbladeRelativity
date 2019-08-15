@@ -15,6 +15,7 @@ public:
 	void add(glm::vec2 point);
 	void draw();
 
+	std::vector<Curve> getCurves();
 	CurveLocation getLocationOf(glm::vec2 point);
 };
 

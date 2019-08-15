@@ -4,7 +4,7 @@
 #include <functional>
 #include <limits>
 #include <memory> //shared_ptr, unique_ptr, weak_ptr
-
+#include <vector>
 class CurveLocation; // forward declare 
 
 class Curve : public std::enable_shared_from_this<Curve> {
@@ -38,20 +38,27 @@ public:
 
 	void draw();
 
-	CurveLocation getLocationOf(glm::vec2 point) {
-		return getLocationAtTime(getTimeOf(point));
-	}
+	CurveLocation getLocationOf(glm::vec2 point);
 
 	double getTimeOf(glm::vec2 point);
 
 	CurveLocation getLocationAtTime(double t);
+
+	static double solveCubic(std::vector<double> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
 };
 
 class CurveLocation {
-private:
+public:
 	double time;
 	std::weak_ptr<Curve> curve;
-public:
+
 	CurveLocation(std::weak_ptr<Curve> curve, double time) :
 		curve(curve), time(time) {};
+
+	CurveLocation() :
+		curve(std::shared_ptr<Curve>(nullptr)), time(NAN) {};
+
+	bool isValid() {
+		return isnan(time) || curve.expired();
+	}
 };

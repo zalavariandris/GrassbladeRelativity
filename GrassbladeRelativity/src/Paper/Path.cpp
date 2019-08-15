@@ -18,16 +18,16 @@ void Path::draw() {
  * Returns the curve location of the specified point if it lies on the
  * path, `null` otherwise.
 */
-CurveLocation getLocationOf(glm::vec2 point) {
+CurveLocation Path::getLocationOf(glm::vec2 point) {
 	auto curves = getCurves();
-	for (auto i = 0, i < curves.size(), i++) {
-		auto loc = curves[i].getLocationOf(point);
-		if (loc)
+	for (auto i = 0; i < curves.size(); i++) {
+		CurveLocation loc = curves[i].getLocationOf(point);
+		if (isnan(loc.time))
 			return loc;
 	}
-	return null;
+	return CurveLocation();
 };
 
-std::vector<Curve> getCurves() {
+std::vector<Curve> Path::getCurves() {
 	return std::vector<Curve>();
 }
