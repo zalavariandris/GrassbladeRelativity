@@ -171,7 +171,6 @@ double Numerical::integrate(std::function<double(double)> f, double a, double b,
 	auto m = (n + 1) >> 1;
 	auto sum = n & 1 ? w[i++] * f(B) : 0; // Handle odd n
 	while (i < m) {
-		std::cout << "m: " << m << std::endl;
 		double Ax = A * x[i];
 		sum += w[i++] * (f(B + Ax) + f(B - Ax));
 	}

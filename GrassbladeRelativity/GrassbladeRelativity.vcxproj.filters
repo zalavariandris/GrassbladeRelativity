@@ -20,7 +20,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\Paper\Path.cpp" />
-    <ClCompile Include="src\Paper\Segment.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_demo.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_draw.cpp" />

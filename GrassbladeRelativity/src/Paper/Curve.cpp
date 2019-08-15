@@ -1,7 +1,8 @@
-#include "ofMain.h" // ofDrawLine
 #include "Curve.h"
-#include "numerical.h"
 
+#include "ofMain.h" // ofDrawLine
+#include "numerical.h"
+#include "Path.h"
 
 glm::vec2 Curve::getPoint(float t) {
 	// from paper.js
@@ -9,14 +10,11 @@ glm::vec2 Curve::getPoint(float t) {
 	// Calculate the curve point at parameter value t
 	// Use special handling at t === 0 / 1, to avoid imprecisions.
 	// See #960
-	float x0 = A.x;
-	float y0 = A.y;
-	float x1 = B.x;
-	float y1 = B.y;
-	float x2 = C.x;
-	float y2 = C.y;
-	float x3 = D.x;
-	float y3 = D.y;
+	auto v = getValues();
+	float x0 = v[0]; float y0 = v[1];
+	float x1 = v[2]; float y1 = v[3];
+	float x2 = v[4]; float y2 = v[5];
+	float x3 = v[6]; float y3 = v[7];
 
 	// Calculate the polynomial coefficients.
 	float cx = 3 * (x1 - x0);
@@ -47,14 +45,11 @@ glm::vec2 Curve::getPoint(float t) {
 }
 
 glm::vec2 Curve::getTangent(float t, bool normalized) {
-	float x0 = A.x;
-	float y0 = A.y;
-	float x1 = B.x;
-	float y1 = B.y;
-	float x2 = C.x;
-	float y2 = C.y;
-	float x3 = D.x;
-	float y3 = D.y;
+	auto v = getValues();
+	float x0 = v[0]; float y0 = v[1];
+	float x1 = v[2]; float y1 = v[3];
+	float x2 = v[4]; float y2 = v[5];
+	float x3 = v[6]; float y3 = v[7];
 
 	float cx = 3 * (x1 - x0);
 	float bx = 3 * (x2 - x1) - cx;
@@ -120,12 +115,13 @@ double Curve::getNearestTime(glm::vec2 point) {
 }
 
 std::function<double(double)> Curve::getLengthIntegrand() {
-	// Calculate the coefficients of a Bezier derivative.
-	double x0 = A.x; double y0 = A.y;
-	double x1 = B.x; double y1 = B.y;
-	double x2 = C.x; double y2 = C.y;
-	double x3 = D.x; double y3 = D.y;
+	auto v = getValues();
+	float x0 = v[0]; float y0 = v[1];
+	float x1 = v[2]; float y1 = v[3];
+	float x2 = v[4]; float y2 = v[5];
+	float x3 = v[6]; float y3 = v[7];
 
+	// Calculate the coefficients of a Bezier derivative.
 	double ax = 9 * (x1 - x2) + 3 * (x3 - x0);
 	double bx = 6 * (x0 + x2) - 12 * x1;
 	double cx = 3 * (x1 - x0);
@@ -151,10 +147,12 @@ int Curve::getIterations(double a, double b) {
 	return Numerical::getMax({ 2, Numerical::getMin({ 16, ceil(abs(b - a) * 32) }) });
 }
 
-double Curve::getLength() {
-	double a = 0.0;
-	double b = 1.0;
-	return Numerical::integrate(getLengthIntegrand(), a, b, getIterations(a, b));
+double Curve::getLength(double a, double b) {
+	return getLength(a, b, getLengthIntegrand());
+}
+
+double Curve::getLength(double a, double b, std::function<double(double)> ds) {
+	return Numerical::integrate(ds, a, b, getIterations(a, b));
 }
 
 void Curve::draw() {
@@ -180,8 +178,9 @@ CurveLocation Curve::getLocationOf(glm::vec2 point) {
 }
 
 double Curve::getTimeOf(glm::vec2 point) {
-	glm::vec2 p0 = A;
-	glm::vec2 p3 = B;
+	auto v = getValues();
+	glm::vec2 p0{ v[0], v[1] };
+	glm::vec2 p3{ v[6], v[7] };
 	double t = isClose(point, p0) ? 0
 		: isClose(point, p3) ? 1
 		: NAN;
@@ -192,7 +191,7 @@ double Curve::getTimeOf(glm::vec2 point) {
 		for (auto c = 0; c < 2; c++) {
 			//TODO: in paperjs there is a private v parameter of curve, holdin all the coordinates of the curve instead 4 points
 			// for now supply an array of the point coords, but later implement the v aparameter as in paperjs, and use that.
-			auto count = Curve::solveCubic({A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y}, c, coords[c], roots, 0, 1);
+			auto count = Curve::solveCubic(v, c, coords[c], roots, 0, 1);
 			for (auto i = 0; i < count; i++) {
 				auto u = roots[i];
 				if (isClose(point, getPoint(u), Numerical::GEOMETRIC_EPSILON))
@@ -218,4 +217,69 @@ double Curve::solveCubic(std::vector<double> v, int coord, double val, std::vect
 		res = Numerical::solveCubic(a, b, c, v0 - val, roots, minV, maxV);
 	}
 	return res;
+}
+
+CurveLocation Curve::getLocationAt(double offset) {
+	return getLocationAtTime(getTimeAt(offset));
+}
+
+double Curve::getTimeAt(double offset, double start) {
+	if (isnan(start))
+		start = offset < 0 ? 1 : 0;
+	if (offset == 0)
+		return start;
+	// See if we're going forward or backward, and handle cases
+	// differently
+	auto epsilon = /*#=*/Numerical::EPSILON;
+	auto forward = offset > 0;
+	auto a = forward ? start : 0;
+	auto b = forward ? 1 : start;
+	// Use integrand to calculate both range length and part
+	// lengths in f(t) below.
+	auto ds = getLengthIntegrand();
+	// Get length of total range
+	auto rangeLength = getLength(a, b, ds);
+	auto diff = abs(offset) - rangeLength;
+	if (abs(diff) < epsilon) {
+		// Matched the end:
+		return forward ? b : a;
+	}
+	else if (diff > epsilon) {
+		// We're out of bounds.
+		return NAN;
+	}
+	// Use offset / rangeLength for an initial guess for t, to
+	// bring us closer:
+	double guess = offset / rangeLength;
+	double length = 0;
+	// Iteratively calculate curve range lengths, and add them up,
+	// using integration precision depending on the size of the
+	// range. This is much faster and also more precise than not
+	// modifying start and calculating total length each time.
+	auto f = [&](double t) {
+		// When start > t, the integration returns a negative value.
+		length += Numerical::integrate(ds, start, t,
+			getIterations(start, t));
+		start = t;
+		return length - offset;
+	};
+	// Start with out initial guess for x.
+	// NOTE: guess is a negative value when looking backwards.
+	return Numerical::findRoot(f, ds, start + guess, a, b, 32,
+		/*#=*/Numerical::EPSILON);
+}
+std::vector<double> Curve::getValues() {
+	auto p1 = _segment1._point;
+	auto h1 = _segment1._handleOut;
+	auto h2 = _segment2._handleIn;
+	auto p2 = _segment2._point;
+	auto x1 = p1.x; auto y1 = p1.y;
+	auto x2 = p2.x; auto y2 = p2.y;
+
+	return {
+		x1, y1,
+		x1 + h1.x, y1 + h1.y,
+		x2 + h2.x, y2 + h2.y,
+		x2, y2
+	};
 }
