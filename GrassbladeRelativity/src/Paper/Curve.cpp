@@ -3,6 +3,7 @@
 #include "ofMain.h" // ofDrawLine
 #include "numerical.h"
 #include "Path.h"
+#include "CurveLocation.h"
 
 glm::vec2 Curve::getPointAtTime(double t) {
 	// from paper.js
@@ -166,7 +167,7 @@ void Curve::draw() {
 }
 
 CurveLocation Curve::getLocationAtTime(double t) {
-	return CurveLocation(shared_from_this(), t);
+	return CurveLocation(*this, t);
 }
 
 //TODO: originaly isClose is part of the point class. Check how PAPER.js handles epsilon parameter?

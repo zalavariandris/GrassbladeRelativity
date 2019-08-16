@@ -6,9 +6,9 @@
 #include <memory> //shared_ptr, unique_ptr, weak_ptr
 #include <vector>
 #include "Segment.h"
-#include "CurveLocation.h"
 
 class Path;
+class CurveLocation;
 class Curve : public std::enable_shared_from_this<Curve> {
 private:
 	std::function<double(double)> getLengthIntegrand();

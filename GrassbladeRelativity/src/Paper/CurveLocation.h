@@ -2,16 +2,17 @@
 #include <memory>
 #include "glm/glm.hpp"
 #include <memory>
-class Curve;
+#include "Curve.h"
+
 class CurveLocation {
 public:
 	double _time;
-	std::shared_ptr<Curve> _curve;
+	Curve _curve;
 	glm::vec2 _point;
 
 	CurveLocation();
 
-	CurveLocation(std::shared_ptr<Curve> curve, double time);
+	CurveLocation(Curve curve, double time);
 
 	bool isValid() const {
 		return isnan(_time);

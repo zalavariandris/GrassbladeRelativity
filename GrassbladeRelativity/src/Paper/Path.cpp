@@ -1,4 +1,6 @@
 #include "Path.h"
+#include "CurveLocation.h"
+
 Path::Path() {
 	_closed = false;
 }

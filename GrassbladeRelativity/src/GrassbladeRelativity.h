@@ -6,6 +6,7 @@
 
 #include "Paper/Curve.h"
 #include "Paper/Path.h"
+#include "Paper/CurveLocation.h"
 class GrassbladeRelativity
 {
 public:
@@ -55,7 +56,6 @@ public:
 		Im2D::DragBezierSegment("Curve", &A, &B, &C, &D);
 
 		//
-
 		auto curve = Curve(Segment(A, glm::vec2(), B - A), Segment(D, C - D, glm::vec2()));
 		glm::vec2 mousePos = Im2D::GetMousePos();
 
@@ -64,9 +64,8 @@ public:
 		static float offset{ 0.5 };
 		ImGui::DragFloat("offset", &offset);
 		CurveLocation locationAt = curve.getLocationAt(offset);
-		cout << "loc._time: " << locationAt._time << endl;
-		cout << "loc._curve: " << (locationAt._curve ? true : false) << endl;
-		cout << "loc._point: " << locationAt._point << endl;
+		Im2D::DragPoint("location point", &locationAt._point);
+		ImGui::Text("ocation time: %f", locationAt._time);
 
 
 		// draw curve with  OF
