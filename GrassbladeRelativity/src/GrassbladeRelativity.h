@@ -21,7 +21,7 @@ public:
 		double distance = uv.x;
 		double t = uv.y;
 
-		glm::vec2 P = curve.getPoint(t);
+		glm::vec2 P = curve.getPointAtTime(t);
 		glm::vec2 normal = curve.getNormal(t, true);
 		
 		glm::vec2 xy = P + normal*distance;
@@ -30,10 +30,10 @@ public:
 
 	glm::vec2 rectToCurve(Curve curve, glm::vec2 xy) {
 		double t = curve.getNearestTime(xy);
-		auto Q = curve.getPoint(t);
+		auto Q = curve.getPointAtTime(t);
 		double distance = glm::distance(xy, Q);
 
-		glm::vec2 P = curve.getPoint(t);
+		glm::vec2 P = curve.getPointAtTime(t);
 		glm::vec2 normal = curve.getNormal(t);
 		double dot = glm::dot(glm::normalize(xy-P), glm::normalize(normal));
 
@@ -48,15 +48,26 @@ public:
 
 	void showCurve() {
 		static glm::vec2 A{ 0,0 };
-		static glm::vec2 B{ 100, 100 };
-		static glm::vec2 C{ 200, 200 };
-		static glm::vec2 D{ 300, 300 };
+		static glm::vec2 B{ 50, 50 };
+		static glm::vec2 C{ 100, 100 };
+		static glm::vec2 D{ 150, 150 };
 
 		Im2D::DragBezierSegment("Curve", &A, &B, &C, &D);
 
 		//
-		Curve curve{ Segment(A, glm::vec2(), B-A), Segment(D, C-D, glm::vec2()) };
+
+		auto curve = Curve(Segment(A, glm::vec2(), B - A), Segment(D, C - D, glm::vec2()));
 		glm::vec2 mousePos = Im2D::GetMousePos();
+
+		ImGui::Text("getLength: %f", curve.getLength());
+
+		static float offset{ 0.5 };
+		ImGui::DragFloat("offset", &offset);
+		CurveLocation locationAt = curve.getLocationAt(offset);
+		cout << "loc._time: " << locationAt._time << endl;
+		cout << "loc._curve: " << (locationAt._curve ? true : false) << endl;
+		cout << "loc._point: " << locationAt._point << endl;
+
 
 		// draw curve with  OF
 		ofSetColor(ofColor::black);
@@ -67,7 +78,7 @@ public:
 		for (int i = 0; i < 10; i++) {
 			float t = (float)i / 9;
 			glm::vec2 N = curve.getNormal(t);
-			glm::vec2 P = curve.getPoint(t);
+			glm::vec2 P = curve.getPointAtTime(t);
 			ofDrawLine(P, P + N * 100);
 		}
 
@@ -76,7 +87,7 @@ public:
 		for (int i = 0; i < 10; i++) {
 			float t = (float)i / 9;
 			glm::vec2 N = curve.getTangent(t);
-			glm::vec2 P = curve.getPoint(t);
+			glm::vec2 P = curve.getPointAtTime(t);
 			ofDrawLine(P, P + N * 100);
 		}
 	}
@@ -101,7 +112,7 @@ public:
 		CurveLocation loc = path.getLocationAt(offset);
 		cout << "--- path ---" << endl;
 		cout << "curves count: " << path.getCurves().size() << endl;
-		cout << loc.time << endl;
+		//cout << loc._time << endl;
 		//if(loc)
 		//	Q = loc.curve.lock()->getPoint(loc.time);
 		

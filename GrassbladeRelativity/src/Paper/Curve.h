@@ -6,9 +6,9 @@
 #include <memory> //shared_ptr, unique_ptr, weak_ptr
 #include <vector>
 #include "Segment.h"
-class CurveLocation; // forward declare 
-class Path;
+#include "CurveLocation.h"
 
+class Path;
 class Curve : public std::enable_shared_from_this<Curve> {
 private:
 	std::function<double(double)> getLengthIntegrand();
@@ -34,7 +34,7 @@ public:
 		_segment1(segment1), 
 		_segment2(segment2) {};
 
-	glm::vec2 getPoint(float t);
+	glm::vec2 getPointAtTime(double t);
 
 	glm::vec2 getTangent(float t, bool normalized = true);
 
@@ -42,7 +42,7 @@ public:
 
 	double getNearestTime(glm::vec2 point);
 
-	double getLength(double a=0.0, double b=0.0);
+	double getLength(double a=0.0, double b=1.0);
 	double getLength(double a, double b, std::function<double(double)> ds);
 
 	void draw();
@@ -69,25 +69,4 @@ public:
 	double getTimeAt(double offset, double start = NAN);
 
 	std::vector<double> getValues();
-};
-
-class CurveLocation {
-public:
-	double time;
-	std::weak_ptr<Curve> curve;
-
-	CurveLocation(std::weak_ptr<Curve> curve, double time) :
-		curve(curve), time(time) {};
-
-	CurveLocation() :
-		curve(std::shared_ptr<Curve>(nullptr)), time(NAN) {};
-
-	bool isValid() const {
-		// TODO: is 'expired' the right way to check if a weak_ptr was constructed with nullptr?
-		return isnan(time) || curve.expired();
-	}
-
-	operator bool() const {
-		return isValid();
-	}
 };

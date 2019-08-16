@@ -4,7 +4,7 @@
 #include "numerical.h"
 #include "Path.h"
 
-glm::vec2 Curve::getPoint(float t) {
+glm::vec2 Curve::getPointAtTime(double t) {
 	// from paper.js
 	// type === 0: getPoint()
 	// Calculate the curve point at parameter value t
@@ -90,7 +90,7 @@ double Curve::getNearestTime(glm::vec2 point) {
 
 	static auto refine = [&](float t)->bool {
 		if (t >= 0.0 && t <= 1.0) {
-			float dist = glm::distance(point, getPoint(t));
+			float dist = glm::distance(point, getPointAtTime(t));
 			if (dist < minDist) {
 				minDist = dist;
 				minT = t;
@@ -152,20 +152,21 @@ double Curve::getLength(double a, double b) {
 }
 
 double Curve::getLength(double a, double b, std::function<double(double)> ds) {
+	cout << a << " " << b << endl;
 	return Numerical::integrate(ds, a, b, getIterations(a, b));
 }
 
 void Curve::draw() {
 	const int segments{ 8 };
 	for (int i = 0; i < segments; i++) {
-		glm::vec2 P1 = getPoint((float)i / segments);
-		glm::vec2 P2 = getPoint(((float)i + 1) / segments);
+		glm::vec2 P1 = getPointAtTime((float)i / segments);
+		glm::vec2 P2 = getPointAtTime(((float)i + 1) / segments);
 		ofDrawLine(P1, P2);
 	};
 }
 
 CurveLocation Curve::getLocationAtTime(double t) {
-	return CurveLocation(weak_from_this(), t);
+	return CurveLocation(shared_from_this(), t);
 }
 
 //TODO: originaly isClose is part of the point class. Check how PAPER.js handles epsilon parameter?
@@ -194,7 +195,7 @@ double Curve::getTimeOf(glm::vec2 point) {
 			auto count = Curve::solveCubic(v, c, coords[c], roots, 0, 1);
 			for (auto i = 0; i < count; i++) {
 				auto u = roots[i];
-				if (isClose(point, getPoint(u), Numerical::GEOMETRIC_EPSILON))
+				if (isClose(point, getPointAtTime(u), Numerical::GEOMETRIC_EPSILON))
 					return u;
 			}
 		}
