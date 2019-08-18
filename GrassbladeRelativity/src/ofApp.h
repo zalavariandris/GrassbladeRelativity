@@ -2,14 +2,24 @@
 
 #include "ofMain.h"
 #include "ofxImGui.h"
-#include "GrassbladeRelativity.h"
+#include "Im2D/Im2D.h"
+#include "imgui.h"
+#include "Im2D/Im2D.h"
+#include "Im2D/im2d_draw.h"
+#include "Paper/Curve.h"
+#include "Paper/Path.h"
+#include "Paper/CurveLocation.h"
+
 class ofApp : public ofBaseApp{
+public:
+	ofxImGui::Gui gui;
+	ofCamera camera;
+	void setup();
+	void showCurve();
 
-	public:
-		void setup();
-		void update();
-		void draw();
+	void showPath();
 
-		ofxImGui::Gui gui;
-		GrassbladeRelativity grassbladeRelativity;
+	void draw();
+
+	void update();
 };

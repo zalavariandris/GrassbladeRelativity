@@ -217,7 +217,6 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClInclude Include="src\Paper\Segment.h" />
     <ClInclude Include="src\Paper\Path.h" />
     <ClInclude Include="src\Paper\Curve.h" />
-    <ClInclude Include="src\GrassbladeRelativity.h" />
     <ClInclude Include="src\Im2D\Im2D.h" />
     <ClInclude Include="src\Im2D\im2d_draw.h" />
     <ClInclude Include="src\ofApp.h" />

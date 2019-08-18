@@ -64,9 +64,6 @@
     <ClInclude Include="src\Paper\Curve.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\GrassbladeRelativity.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\Im2D\im2d_draw.h">
       <Filter>src</Filter>
     </ClInclude>

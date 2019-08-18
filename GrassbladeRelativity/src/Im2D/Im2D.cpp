@@ -100,16 +100,17 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size) {
 	static std::map<ImGuiID, glm::mat3> storage_mat;
 	glm::mat3 viewMatrix = storage_mat.count(id) > 0 ? storage_mat[id] : glm::mat3();
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
-	ImVec2 windowSize = ImGui::GetWindowSize();
+	
+	ImVec2 viewportSize = ImGui::GetContentRegionAvail();
 	glm::mat3 projectionMatrix{
 		1,     0,     0,
 		0,     1,     0,
-		(cursorScreenPos.x + cursorScreenPos.x+windowSize.x) / 2, (cursorScreenPos.y + cursorScreenPos.y + windowSize.y) / 2, 1
+		(cursorScreenPos.x + cursorScreenPos.x+ viewportSize.x) / 2, (cursorScreenPos.y + cursorScreenPos.y + viewportSize.y) / 2, 1
 	};
 
 	// Screen control
 	ImGui::SetCursorScreenPos(cursorScreenPos);
-	if (ScreenControls("ViewerControls", windowSize, &viewMatrix)) {
+	if (ScreenControls("ViewerControls", viewportSize, &viewMatrix)) {
 		storage_mat[id] = viewMatrix;
 	}
 
@@ -134,6 +135,19 @@ void Im2D::ViewerEnd() {
 	ctx->viewMatrix = glm::mat3(1);
 	ctx->viewMatrix = glm::mat3(1);
 	ImGui::EndChild();
+}
+
+float Im2D::getZoom() {
+	Im2DContext * ctx = GetCurrentContext();
+	glm::mat3 viewMatrix = ctx->viewMatrix;
+	return viewMatrix[0][0];
+}
+
+glm::vec2 Im2D::getPan() {
+	Im2DContext * ctx = GetCurrentContext();
+	glm::mat3 viewMatrix = ctx->viewMatrix;
+	float zoom = viewMatrix[0][0];
+	return glm::vec2(viewMatrix[2][0] / zoom, viewMatrix[2][1] / zoom);
 }
 
 // Gizmos

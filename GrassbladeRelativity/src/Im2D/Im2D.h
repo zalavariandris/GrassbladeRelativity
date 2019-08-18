@@ -4,6 +4,8 @@
 struct Im2DContext {
 	glm::mat3 viewMatrix;
 	glm::mat3 projectionMatrix;
+	glm::vec2 viewportPos;
+	glm::vec2 viewportSize;
 };
 
 namespace Im2D {
@@ -12,6 +14,9 @@ namespace Im2D {
 	void ViewerBegin(const char* label_id, const ImVec2 & size = ImVec2(0, 0));
 
 	void ViewerEnd();
+
+	float getZoom();
+	glm::vec2 getPan();
 
 	glm::vec2 GetMousePos();
 

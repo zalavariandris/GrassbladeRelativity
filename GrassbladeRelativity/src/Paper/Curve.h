@@ -34,39 +34,42 @@ public:
 		_segment1(segment1), 
 		_segment2(segment2) {};
 
+	std::vector<double> getValues(); //TODO: !!! is this public?
+
 	glm::vec2 getPointAtTime(double t);
 
-	glm::vec2 getTangent(float t, bool normalized = true);
+	glm::vec2 getTangent(double t, bool normalized = true);
 
-	glm::vec2 getNormal(float t, bool normalized = true);
+	glm::vec2 getNormal(double t, bool normalized = true);
+
+	double getCurvature(double t);
 
 	double getNearestTime(glm::vec2 point);
 
 	double getLength(double a=0.0, double b=1.0);
+
 	double getLength(double a, double b, std::function<double(double)> ds);
 
 	void draw();
 
+	CurveLocation getLocationAt(double offset);
+
+	CurveLocation getLocationAtTime(double t);
+
+	double getTimeAt(double offset, double start = NAN);
+
 	/**
-	 * {@grouptitle Positions on Paths and Curves}
-	 *
-	 * Returns the curve location of the specified point if it lies on the
-	 * path, `null` otherwise.
-	 *
-	 * @param {Point} point the point on the path
-	 * @return {CurveLocation} the curve location of the specified point
-	 */
+	* {@grouptitle Positions on Paths and Curves}
+	*
+	* Returns the curve location of the specified point if it lies on the
+	* path, `null` otherwise.
+	*
+	* @param {Point} point the point on the path
+	* @return {CurveLocation} the curve location of the specified point
+	*/
 	CurveLocation getLocationOf(glm::vec2 point);
 
 	double getTimeOf(glm::vec2 point);
 
-	CurveLocation getLocationAtTime(double t);
-
 	static double solveCubic(std::vector<double> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
-
-	CurveLocation getLocationAt(double offset);
-
-	double getTimeAt(double offset, double start = NAN);
-
-	std::vector<double> getValues();
 };
