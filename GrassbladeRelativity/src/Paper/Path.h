@@ -7,8 +7,8 @@
 
 class Path : public std::enable_shared_from_this<Path>
 {
-	std::vector<Segment> _segments;
-	std::vector<Curve> _curves;
+	std::vector<std::shared_ptr<Segment>> _segments;
+	std::vector<std::shared_ptr<Curve>> _curves;
 	int Path::_countCurves();
 	bool _closed;
 	int _version;
@@ -16,9 +16,9 @@ class Path : public std::enable_shared_from_this<Path>
 	bool LengthNeedsUpdate;
 	double _length;
 public:
-	Path(std::vector<Segment> segments);
+	Path(std::vector<std::shared_ptr<Segment>> segments);
 
-	std::vector<Curve> getCurves();
+	std::vector<std::shared_ptr<Curve>> getCurves();
 	CurveLocation getLocationAt(double offset);
 	glm::vec2 getPointAt(double offset);
 	glm::vec2 getTangentAt(double offset);
@@ -33,8 +33,8 @@ public:
 
 	double getLength();
 
-	Curve getFirstCurve();
-	Curve getLastCurve();
+	std::shared_ptr<Curve> getFirstCurve();
+	std::shared_ptr<Curve> getLastCurve();
 
 	void draw();
 };

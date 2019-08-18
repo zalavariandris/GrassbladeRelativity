@@ -338,10 +338,10 @@ double Curve::getTimeAt(double offset, double start) {
 }
 
 std::vector<double> Curve::getValues() {
-	auto p1 = _segment1._point;
-	auto h1 = _segment1._handleOut;
-	auto h2 = _segment2._handleIn;
-	auto p2 = _segment2._point;
+	auto p1 = _segment1->_point;
+	auto h1 = _segment1->_handleOut;
+	auto h2 = _segment2->_handleIn;
+	auto p2 = _segment2->_point;
 	auto x1 = p1.x; auto y1 = p1.y;
 	auto x2 = p2.x; auto y2 = p2.y;
 

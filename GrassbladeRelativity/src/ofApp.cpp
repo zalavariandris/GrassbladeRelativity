@@ -1,6 +1,6 @@
 #include "ofApp.h"
 
-glm::vec2 curveToRect(Curve curve, glm::vec2 uv) {
+glm::vec2 curveToRect(Curve & curve, glm::vec2 uv) {
 	double distance = uv.x;
 	double t = uv.y;
 
@@ -23,7 +23,7 @@ glm::vec2 pathToRect(Path & path, glm::vec2 uv) {
 	return xy;
 }
 
-glm::vec2 rectToCurve(Curve curve, glm::vec2 xy) {
+glm::vec2 rectToCurve(Curve & curve, glm::vec2 xy) {
 	double t = curve.getNearestTime(xy);
 	auto Q = curve.getPointAtTime(t);
 	double distance = glm::distance(xy, Q);
@@ -58,49 +58,6 @@ void ofApp::setup() {
 	camera.setPosition(0, 0, 0);
 }
 
-void ofApp::showCurve() {
-	static glm::vec2 A{ 0,0 };
-	static glm::vec2 B{ 50, 50 };
-	static glm::vec2 C{ 100, 100 };
-	static glm::vec2 D{ 150, 150 };
-
-	Im2D::DragBezierSegment("Curve", &A, &B, &C, &D);
-
-	//
-	auto curve = Curve(Segment(A, glm::vec2(), B - A), Segment(D, C - D, glm::vec2()));
-	glm::vec2 mousePos = Im2D::GetMousePos();
-
-	ImGui::Text("getLength: %f", curve.getLength());
-
-	static float offset{ 0.5 };
-	ImGui::DragFloat("offset", &offset);
-	CurveLocation locationAt = curve.getLocationAt(offset);
-	Im2D::DragPoint("location point", &locationAt._point);
-	ImGui::Text("ocation time: %f", locationAt._time);
-
-	// draw curve with  OF
-	ofSetColor(ofColor::black);
-	curve.draw();
-
-	// draw normals
-	ofSetColor(ofColor::green);
-	for (int i = 0; i < 10; i++) {
-		float t = (float)i / 9;
-		glm::vec2 N = curve.getNormal(t);
-		glm::vec2 P = curve.getPointAtTime(t);
-		ofDrawLine(P, P + N * 100);
-	}
-
-	// draw tangents
-	ofSetColor(ofColor::red);
-	for (int i = 0; i < 10; i++) {
-		float t = (float)i / 9;
-		glm::vec2 N = curve.getTangent(t);
-		glm::vec2 P = curve.getPointAtTime(t);
-		ofDrawLine(P, P + N * 100);
-	}
-}
-
 void syncCameraToViewport(ofCamera & camera) {
 	float zoom = Im2D::getZoom();
 	glm::vec2 pan = Im2D::getPan();
@@ -124,16 +81,17 @@ void ofApp::showPath() {
 	ImGui::End();
 
 	// Create blade
-	static glm::vec2 A{ 50,-170 };
+	static glm::vec2 A{ 0,0 };
 	static glm::vec2 B{ 7,-90 };
-	static glm::vec2 C{ 0,0 };
+	static glm::vec2 C{ 50,-170 };
+
 	glm::vec2 handleIn{ (A-C)*0.25 };
 	glm::vec2 handleOut{ (C-A) *0.25 };
 
 	Path path({
-		Segment(A),
-		Segment(B, handleIn, handleOut),
-		Segment(C)
+		std::make_shared<Segment>(A),
+		std::make_shared <Segment>(B, handleIn, handleOut),
+		std::make_shared <Segment>(C)
 	});
 
 	// Edit blade
@@ -161,6 +119,7 @@ void ofApp::showPath() {
 
 		ofDrawLine(P1, P2);
 	};
+
 	// draw handles
 	ofDrawLine(B, B + handleIn);
 	ofDrawLine(B, B + handleOut);
@@ -176,8 +135,8 @@ void ofApp::showPath() {
 	}
 	ImGui::End();
 
-	//crete location
-	static float time{ 1.0 };
+	//create location
+	static float time{ 0.0 };
 	ImGui::Begin("GrassbladeRelativity");
 	if (ImGui::CollapsingHeader("create location", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::SliderFloat("time", &time, 0.0, 1.0);

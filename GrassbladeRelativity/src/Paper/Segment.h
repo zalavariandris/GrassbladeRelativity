@@ -1,9 +1,15 @@
 #pragma once
 
 #include "glm/glm.hpp"
+#include <memory>
+class Curve;
+class Path;
 class Segment
 {
 public:
+	Segment() :
+		_point(glm::vec2(0)) {};
+
 	Segment(glm::vec2 point)
 		: _point(point) {};
 
@@ -14,5 +20,8 @@ public:
 	glm::vec2 _point;
 	glm::vec2 _handleIn;
 	glm::vec2 _handleOut;
+
+	std::weak_ptr<Curve> _curve;
+	std::weak_ptr<Path> _path;
 };
 

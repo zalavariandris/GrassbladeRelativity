@@ -16,20 +16,22 @@ private:
 	// Amount of integral evaluations for the interval 0 <= a < b <= 1
 	int getIterations(double a, double b);
 	std::weak_ptr<Path> _path;
-	Segment _segment1{ glm::vec2() };
-	Segment _segment2{ glm::vec2() };
+	std::shared_ptr<Segment> _segment1;
+	std::shared_ptr<Segment> _segment2;
 
 public:
-	Curve() {};
+	Curve():
+	_segment1(std::make_shared<Segment>()),
+	_segment2(std::make_shared<Segment>()){};
 
-	Curve(Segment segment1, Segment segment2):
+	Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2):
 		_segment1(segment1), 
 		_segment2(segment2) {};
 
 	/* Undocumented internal constructor, used by Path#getCurves()
 	 * new Segment(path, segment1, segment2);
 	 */
-	Curve(std::weak_ptr<Path> path, Segment segment1, Segment segment2): 
+	Curve(std::weak_ptr<Path> path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2):
 		_path(path), 
 		_segment1(segment1), 
 		_segment2(segment2) {};
