@@ -6,7 +6,7 @@ CurveLocation::CurveLocation() :
 CurveLocation::CurveLocation(Curve curve, double time) :
 	_curve(curve), _time(time) {
 	_point = _curve.getPointAtTime(_time);
-	_normal = _curve.getNormal(_time, true);
-	_tangent = _curve.getTangent(_time, true);
+	_normal = _curve.getNormalAtTime(_time);
+	_tangent = _curve.getTangentAtTime(_time);
 };
 

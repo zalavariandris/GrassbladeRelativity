@@ -15,37 +15,47 @@ private:
 
 	// Amount of integral evaluations for the interval 0 <= a < b <= 1
 	int getIterations(double a, double b);
-	std::weak_ptr<Path> _path;
+public:
+	/*
+	 *static functions
+	 */
+	static glm::vec2 evaluate(std::array<double, 8>, double t, int type, bool normalized);
+	/*
+	 * private memnbers
+	 */
 	std::shared_ptr<Segment> _segment1;
 	std::shared_ptr<Segment> _segment2;
+	bool LengthNeedsUpdate{ true };
+	bool BoundsNeedsUpdate{ true };
 
-public:
-	Curve():
-	_segment1(std::make_shared<Segment>()),
-	_segment2(std::make_shared<Segment>()){};
+	// class constructors
+	Curve():_segment1(std::make_shared<Segment>()), _segment2(std::make_shared<Segment>()){};
 
-	Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2):
-		_segment1(segment1), 
-		_segment2(segment2) {};
+	Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2): _segment1(segment1), _segment2(segment2) {};
 
 	/* Undocumented internal constructor, used by Path#getCurves()
-	 * new Segment(path, segment1, segment2);
-	 */
-	Curve(std::weak_ptr<Path> path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2):
-		_path(path), 
-		_segment1(segment1), 
-		_segment2(segment2) {};
+	 * new Segment(path, segment1, segment2); */
+	//TODO: weak reference to path
+	//Curve(std::weak_ptr<Path> path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2): _path(path), _segment1(segment1), _segment2(segment2) {};
 
-	std::vector<double> getValues(); //TODO: !!! is this public?
+	/*
+	 * member functions
+	 */
+	std::array<double, 8> getValues(); //TODO: !!! is this public?
 
 	glm::vec2 getPointAtTime(double t);
 
-	glm::vec2 getTangent(double t, bool normalized = true);
+	glm::vec2 getTangentAtTime(double t);
 
-	glm::vec2 getNormal(double t, bool normalized = true);
+	glm::vec2 getWeightedTangentAtTime(double t);
 
-	double getCurvature(double t);
+	glm::vec2 getNormalAtTime(double t);
 
+	glm::vec2 getWeightedNormalAtTime(double t);
+
+	double getCurvatureAtTime(double t);
+
+	//
 	double getNearestTime(glm::vec2 point);
 
 	double getLength(double a=0.0, double b=1.0);
@@ -73,5 +83,7 @@ public:
 
 	double getTimeOf(glm::vec2 point);
 
-	static double solveCubic(std::vector<double> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
+	static double solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
+
+	void _changed();
 };

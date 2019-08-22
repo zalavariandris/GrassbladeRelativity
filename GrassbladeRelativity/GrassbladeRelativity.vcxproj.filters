@@ -93,4 +93,7 @@
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="src\Paper\README.md" />
+  </ItemGroup>
 </Project>

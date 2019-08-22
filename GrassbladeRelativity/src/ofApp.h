@@ -14,6 +14,13 @@ class ofApp : public ofBaseApp{
 public:
 	ofxImGui::Gui gui;
 	ofCamera camera;
+	ofVideoPlayer movie;
+	ofPlanePrimitive plane;
+	ofTexture texture;
+
+	Path sourcePath;
+	Path targetPath;
+
 	void setup();
 	void showCurve();
 

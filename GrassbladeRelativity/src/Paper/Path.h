@@ -7,15 +7,17 @@
 
 class Path : public std::enable_shared_from_this<Path>
 {
-	std::vector<std::shared_ptr<Segment>> _segments;
-	std::vector<std::shared_ptr<Curve>> _curves;
+
 	int Path::_countCurves();
 	bool _closed;
 	int _version;
-	bool CurvesNeedsUpdate;
-	bool LengthNeedsUpdate;
+	bool CurvesNeedsUpdate{ true };
+	bool LengthNeedsUpdate{ true };
 	double _length;
 public:
+	std::vector<std::shared_ptr<Segment>> _segments;
+	std::vector<std::shared_ptr<Curve>> _curves;
+	Path();
 	Path(std::vector<std::shared_ptr<Segment>> segments);
 
 	std::vector<std::shared_ptr<Curve>> getCurves();
@@ -37,5 +39,16 @@ public:
 	std::shared_ptr<Curve> getLastCurve();
 
 	void draw();
+	void add(std::shared_ptr<Segment> segment);
+	void add(std::vector<std::shared_ptr<Segment>> segments);
+
+	void insert(int index, std::shared_ptr<Segment> segment);
+	void insert(int index, std::vector<std::shared_ptr<Segment>> segments);
+
+	void _add(std::vector<std::shared_ptr<Segment>> segs, int index = -1);
+	void _adjustCurves(int start, int end);
+
+	std::shared_ptr<Segment> getFirstSegment();
+	std::shared_ptr<Segment> getLastSegment();
 };
 

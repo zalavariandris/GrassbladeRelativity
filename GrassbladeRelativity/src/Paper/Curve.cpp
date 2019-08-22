@@ -5,57 +5,31 @@
 #include "Path.h"
 #include "CurveLocation.h"
 
-glm::vec2 Curve::getPointAtTime(double t) {
-	// from paper.js
-	// Do not produce results if parameter is out of range or invalid.
-	if (isnan(t) || t < 0 || t > 1)
-		return glm::vec2(NAN);
-
-	auto v = getValues();
-	float x0 = v[0]; float y0 = v[1];
-	float x1 = v[2]; float y1 = v[3];
-	float x2 = v[4]; float y2 = v[5];
-	float x3 = v[6]; float y3 = v[7];
-
-	// If the curve handles are almost zero, reset the control points to the
-	// anchors.
-	if (Numerical::isZero(x1 - x0) && Numerical::isZero(y1 - y0)) {
-		x1 = x0;
-		y1 = y0;
-	}
-	if (Numerical::isZero(x2 - x3) && Numerical::isZero(y2 - y3)) {
-		x2 = x3;
-		y2 = y3;
+namespace Point {
+	bool isZero(glm::vec2 P) {
+		return Numerical::isZero(P.x) && Numerical::isZero(P.y);
 	}
 
-	// Calculate the polynomial coefficients.
-	float cx = 3 * (x1 - x0);
-	float bx = 3 * (x2 - x1) - cx;
-	float ax = x3 - x0 - cx - bx;
-	float cy = 3 * (y1 - y0);
-	float by = 3 * (y2 - y1) - cy;
-	float ay = y3 - y0 - cy - by;
-	float x, y;
-
-	//get point
-	x = t == 0 ? x0 : t == 1 ? x3
-		: ((ax * t + bx) * t + cx) * t + x0;
-	y = t == 0 ? y0 : t == 1 ? y3
-		: ((ay * t + by) * t + cy) * t + y0;
-
-	return glm::vec2(x, y);
+	bool isCollinear(glm::vec2 A, glm::vec2 B) {
+		// NOTE: We use normalized vectors so that the epsilon comparison is
+		// reliable. We could instead scale the epsilon based on the vector
+		// length. But instead of normalizing the vectors before calculating
+		// the cross product, we can scale the epsilon accordingly.
+		return abs(A.x * B.y - A.y * B.x)
+			<= sqrt((A.x * A.x + A.y * A.y) * (B.x * B.x + B.y * B.y))
+			* /*#=*/Numerical::TRIGONOMETRIC_EPSILON;
+	}
 }
 
-glm::vec2 Curve::getTangent(double t, bool normalized) {
+glm::vec2 Curve::evaluate(std::array<double, 8> v, double t, int type, bool normalized) {
 	// Do not produce results if parameter is out of range or invalid.
 	if (isnan(t) || t < 0 || t > 1)
 		return glm::vec2(NAN);
 
-	auto v = getValues();
-	float x0 = v[0]; float y0 = v[1];
-	float x1 = v[2]; float y1 = v[3];
-	float x2 = v[4]; float y2 = v[5];
-	float x3 = v[6]; float y3 = v[7];
+	double x0 = v[0]; double y0 = v[1];
+	double x1 = v[2]; double y1 = v[3];
+	double x2 = v[4]; double y2 = v[5];
+	double x3 = v[6]; double y3 = v[7];
 
 	// If the curve handles are almost zero, reset the control points to the
 	// anchors.
@@ -69,95 +43,112 @@ glm::vec2 Curve::getTangent(double t, bool normalized) {
 	}
 
 	// Calculate the polynomial coefficients.
-	float cx = 3 * (x1 - x0);
-	float bx = 3 * (x2 - x1) - cx;
-	float ax = x3 - x0 - cx - bx;
-	float cy = 3 * (y1 - y0);
-	float by = 3 * (y2 - y1) - cy;
-	float ay = y3 - y0 - cy - by;
-	float x, y;
+	double cx = 3 * (x1 - x0);
+	double bx = 3 * (x2 - x1) - cx;
+	double ax = x3 - x0 - cx - bx;
+	double cy = 3 * (y1 - y0);
+	double by = 3 * (y2 - y1) - cy;
+	double ay = y3 - y0 - cy - by;
+	double x, y;
 
-	// get tangent
-	// 1: tangent, 1st derivative
-	// 2: normal, 1st derivative
-	// 3: curvature, 1st derivative & 2nd derivative
-	// Prevent tangents and normals of length 0:
-	// https://stackoverflow.com/questions/10506868/
-	float tMin = Numerical::CURVETIME_EPSILON;
-	float tMax = 1 - tMin;
-	if (t < tMin) {
-		x = cx;
-		y = cy;
-	}
-	else if (t > tMax) {
-		x = 3 * (x3 - x2);
-		y = 3 * (y3 - y2);
+	if (type == 0) {
+		// type === 0: getPoint()
+		// Calculate the curve point at parameter value t
+		// Use special handling at t === 0 / 1, to avoid imprecisions.
+		// See #960
+		x = t == 0 ? x0 : t == 1 ? x3
+			: ((ax * t + bx) * t + cx) * t + x0;
+		y = t == 0 ? y0 : t == 1 ? y3
+			: ((ay * t + by) * t + cy) * t + y0;
 	}
 	else {
-		x = (3 * ax * t + 2 * bx) * t + cx;
-		y = (3 * ay * t + 2 * by) * t + cy;
+		// type === 1: getTangent()
+		// type === 2: getNormal()
+		// type === 3: getCurvature()
+		double tMin = Numerical::CURVETIME_EPSILON;
+		double tMax = 1 - tMin;
+		// 1: tangent, 1st derivative
+		// 2: normal, 1st derivative
+		// 3: curvature, 1st derivative & 2nd derivative
+		// Prevent tangents and normals of length 0:
+		// https://stackoverflow.com/questions/10506868/
+		if (t < tMin) {
+			x = cx;
+			y = cy;
+		}
+		else if (t > tMax) {
+			x = 3 * (x3 - x2);
+			y = 3 * (y3 - y2);
+		}
+		else {
+			x = (3 * ax * t + 2 * bx) * t + cx;
+			y = (3 * ay * t + 2 * by) * t + cy;
+		}
+		if (normalized) {
+			// When the tangent at t is zero and we're at the beginning
+			// or the end, we can use the vector between the handles,
+			// but only when normalizing as its weighted length is 0.
+			if (x == 0 && y == 0 && (t < tMin || t > tMax)) {
+				x = x2 - x1;
+				y = y2 - y1;
+			}
+			// Now normalize x & y
+			double len = sqrt(x * x + y * y);
+			if (len) {
+				x /= len;
+				y /= len;
+			}
+		}
+		if (type == 3) {
+			// Calculate 2nd derivative, and curvature from there:
+			// http://cagd.cs.byu.edu/~557/text/ch2.pdf page#31
+			// k = |dx * d2y - dy * d2x| / (( dx^2 + dy^2 )^(3/2))
+			auto x2 = 6 * ax * t + 2 * bx;
+			auto y2 = 6 * ay * t + 2 * by;
+			auto d = pow(x * x + y * y, 3 / 2);
+			// For JS optimizations we always return a Point, although
+			// curvature is just a numeric value, stored in x:
+			x = d != 0 ? (x * y2 - y * x2) / d : 0;
+			y = 0;
+		}
 	}
-
-	return normalized ? glm::normalize(glm::vec2(x, y)) : glm::vec2(x, y);
+	// The normal is simply the rotated tangent:
+	return type == 2 ? glm::vec2(y, -x) : glm::vec2(x, y);
 }
 
-glm::vec2 Curve::getNormal(double t, bool normalized) {
-	glm::vec2 tangent = getTangent(t, normalized);
-	return glm::vec2(tangent.y, -tangent.x);
-}
+glm::vec2 Curve::getPointAtTime(double t) {
+	return evaluate(getValues(), t, 0, false);
+};
 
-double Curve::getCurvature(double t) {
-	// from paper.js
-	// Do not produce results if parameter is out of range or invalid.
-	if (isnan(t) || t < 0 || t > 1)
-		return NAN;
+glm::vec2 Curve::getTangentAtTime(double t) {
+	return evaluate(getValues(), t, 1, true);
+};
 
-	auto v = getValues();
-	float x0 = v[0]; float y0 = v[1];
-	float x1 = v[2]; float y1 = v[3];
-	float x2 = v[4]; float y2 = v[5];
-	float x3 = v[6]; float y3 = v[7];
+glm::vec2 Curve::getWeightedTangentAtTime(double t) {
+	return evaluate(getValues(), t, 1, false);
+};
 
-	// If the curve handles are almost zero, reset the control points to the
-	// anchors.
-	if (Numerical::isZero(x1 - x0) && Numerical::isZero(y1 - y0)) {
-		x1 = x0;
-		y1 = y0;
-	}
-	if (Numerical::isZero(x2 - x3) && Numerical::isZero(y2 - y3)) {
-		x2 = x3;
-		y2 = y3;
-	}
+glm::vec2 Curve::getNormalAtTime(double t) {
+	return evaluate(getValues(), t, 2, true);
+};
 
-	// Calculate the polynomial coefficients.
-	float cx = 3 * (x1 - x0);
-	float bx = 3 * (x2 - x1) - cx;
-	float ax = x3 - x0 - cx - bx;
-	float cy = 3 * (y1 - y0);
-	float by = 3 * (y2 - y1) - cy;
-	float ay = y3 - y0 - cy - by;
-	float x, y;
+glm::vec2 Curve::getWeightedNormalAtTime( double t) {
+	return evaluate(getValues(), t, 2, false);
+};
 
-	// Calculate 2nd derivative, and curvature from there:
-	// http://cagd.cs.byu.edu/~557/text/ch2.pdf page#31
-	// k = |dx * d2y - dy * d2x| / (( dx^2 + dy^2 )^(3/2))
-	x2 = 6 * ax * t + 2 * bx;
-	y2 = 6 * ay * t + 2 * by;
-	auto d = pow(x * x + y * y, 3 / 2);
-
-	x = d != 0 ? (x * y2 - y * x2) / d : 0;
-	return x;
-}
+double Curve::getCurvatureAtTime(double t) {
+	return evaluate(getValues(), t, 3, false).x;
+};
 
 double Curve::getNearestTime(glm::vec2 point) {
 	/* rewritten from paper.js*/
 	const int count = 100;
-	float minDist = std::numeric_limits<float>::infinity();
-	float minT = 0;
+	double minDist = std::numeric_limits<double>::infinity();
+	double minT = 0;
 
-	static auto refine = [&](float t)->bool {
+	auto refine = [&](double t)->bool {
 		if (t >= 0.0 && t <= 1.0) {
-			float dist = glm::distance(point, getPointAtTime(t));
+			double dist = glm::distance(point, getPointAtTime(t));
 			if (dist < minDist) {
 				minDist = dist;
 				minT = t;
@@ -169,10 +160,10 @@ double Curve::getNearestTime(glm::vec2 point) {
 	};
 
 	for (int i = 0; i <= count; i++) {
-		refine((float)i / count);
+		refine((double)i / count);
 	};
 
-	float step = 1.0f / (count * 2);
+	double step = 1.0f / (count * 2);
 	while (step > Numerical::CURVETIME_EPSILON) {
 		if (!refine(minT - step) && !refine(minT + step)) {
 			step /= 2.0;
@@ -183,10 +174,10 @@ double Curve::getNearestTime(glm::vec2 point) {
 
 std::function<double(double)> Curve::getLengthIntegrand() {
 	auto v = getValues();
-	float x0 = v[0]; float y0 = v[1];
-	float x1 = v[2]; float y1 = v[3];
-	float x2 = v[4]; float y2 = v[5];
-	float x3 = v[6]; float y3 = v[7];
+	double x0 = v[0]; double y0 = v[1];
+	double x1 = v[2]; double y1 = v[3];
+	double x2 = v[4]; double y2 = v[5];
+	double x3 = v[6]; double y3 = v[7];
 
 	// Calculate the coefficients of a Bezier derivative.
 	double ax = 9 * (x1 - x2) + 3 * (x3 - x0);
@@ -225,8 +216,8 @@ double Curve::getLength(double a, double b, std::function<double(double)> ds) {
 void Curve::draw() {
 	const int segments{ 8 };
 	for (int i = 0; i < segments; i++) {
-		glm::vec2 P1 = getPointAtTime((float)i / segments);
-		glm::vec2 P2 = getPointAtTime(((float)i + 1) / segments);
+		glm::vec2 P1 = getPointAtTime((double)i / segments);
+		glm::vec2 P2 = getPointAtTime(((double)i + 1) / segments);
 		ofDrawLine(P1, P2);
 	};
 }
@@ -268,7 +259,7 @@ double Curve::getTimeOf(glm::vec2 point) {
 	}
 }
 
-double Curve::solveCubic(std::vector<double> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
+double Curve::solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
 	auto v0 = v[coord];
 	auto v1 = v[coord + 2];
 	auto v2 = v[coord + 4];
@@ -337,13 +328,13 @@ double Curve::getTimeAt(double offset, double start) {
 		/*#=*/Numerical::EPSILON);
 }
 
-std::vector<double> Curve::getValues() {
-	auto p1 = _segment1->_point;
-	auto h1 = _segment1->_handleOut;
-	auto h2 = _segment2->_handleIn;
-	auto p2 = _segment2->_point;
-	auto x1 = p1.x; auto y1 = p1.y;
-	auto x2 = p2.x; auto y2 = p2.y;
+std::array<double, 8> Curve::getValues() {
+	glm::vec2 p1 = _segment1->_point;
+	glm::vec2 h1 = _segment1->_handleOut;
+	glm::vec2 h2 = _segment2->_handleIn;
+	glm::vec2 p2 = _segment2->_point;
+	double x1 = p1.x; double y1 = p1.y;
+	double x2 = p2.x; double y2 = p2.y;
 
 	return {
 		x1, y1,
@@ -351,4 +342,9 @@ std::vector<double> Curve::getValues() {
 		x2 + h2.x, y2 + h2.y,
 		x2, y2
 	};
+}
+
+void Curve::_changed() {
+	LengthNeedsUpdate = true;
+	BoundsNeedsUpdate = true;
 }
