@@ -4,6 +4,9 @@
 #include "im2d_draw.h"
 #include "imgui_internal.h"
 #include <map>
+#include <cstring> //strstr, to find ## in label_id
+#include <string>
+#include <iostream>
 //#include "ofMain.h"
 
 Im2DContext * Im2D::GetCurrentContext() {

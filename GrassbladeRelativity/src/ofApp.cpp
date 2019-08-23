@@ -1,5 +1,6 @@
 #include "ofApp.h"
 #include "Paper/numerical.h"
+#include "Im2DPaper/Im2DPaper.h"
 
 glm::vec2 curveToRect(Curve & curve, glm::vec2 uv) {
 	double distance = uv.x;
@@ -65,53 +66,13 @@ void syncCameraToViewport(ofCamera & camera) {
 	camera.setGlobalPosition({ -pan - windowPos / zoom - windowSize / 2 / zoom + ofSize / 2 / zoom, 0 });
 }
 
-bool DragSegment(Segment * segment, std::string type = "BezierCorner") {
-	bool changed{ false };
-	// get points
-	glm::vec2 handleIn = segment->_point + segment->_handleIn;
-	glm::vec2 handleOut = segment->_point + segment->_handleOut;
-	glm::vec2 P = segment->_point;
-
-	// drag points
-	if (Im2D::DragPoint("P", &P)) {
-		segment->_point = P;
-		changed = true;
-	}
-	if (Im2D::DragPoint("in", &handleIn)) {
-		segment->_handleIn = handleIn - P;
-		changed = true;
-	}
-	if (Im2D::DragPoint("out", &handleOut)) {
-		segment->_handleOut = handleOut - P;
-		changed = true;
-	}
-	
-	return changed;
-}
-
 namespace Paper {
-	void draw(Path path) {
-		ofSetColor(ofColor::white);
-		auto segments{ 8 * path.getCurves().size() };
-		for (auto i = 0; i < segments; i++) {
-			double t1 = (double)i / segments;
-			double t2 = ((double)i + 1.0) / segments;
-
-			glm::vec2 P1 = path.getPointAtTime(t1);
-			glm::vec2 P2 = path.getPointAtTime(t2);
-			ofDrawLine(P1, P2);
-		};
-		for (auto segment : path._segments) {
-			ofDrawLine(segment->_point, segment->_point + segment->_handleIn);
-			ofDrawLine(segment->_point, segment->_point + segment->_handleOut);
-		}
-	}
-
 	void draw(Segment segment) {
 		ofSetColor(ofColor::grey);
 		ofDrawCircle(segment._point, 10);
 		ofDrawCircle(segment._point + segment._handleIn, 5);
 		ofDrawCircle(segment._point + segment._handleOut, 5);
+		ofSetColor(ofColor(128, 128, 128, 128));
 		ofDrawLine(segment._point, segment._point + segment._handleIn);
 		ofDrawLine(segment._point, segment._point + segment._handleOut);
 	}
@@ -125,6 +86,19 @@ namespace Paper {
 
 			glm::vec2 P1 = curve.getPointAtTime(t1);
 			glm::vec2 P2 = curve.getPointAtTime(t2);
+			ofDrawLine(P1, P2);
+		};
+	}
+
+	void draw(Path path) {
+		ofSetColor(ofColor::white);
+		auto segments{ 8 * path.getCurves().size() };
+		for (auto i = 0; i < segments; i++) {
+			double t1 = (double)i / segments;
+			double t2 = ((double)i + 1.0) / segments;
+
+			glm::vec2 P1 = path.getPointAtTime(t1);
+			glm::vec2 P2 = path.getPointAtTime(t2);
 			ofDrawLine(P1, P2);
 		};
 	}
@@ -197,23 +171,17 @@ void showPathDemo() {
 	ImGui::SetNextWindowBgAlpha(0.0);
 	ImGui::Begin("PathDemo");
 	Im2D::ViewerBegin("viewport");
-	//Im2D::DragPoint("A", &A);
-	//Im2D::DragPoint("B", &B);
-	//Im2D::DragPoint("C", &C);
-	//Im2D::DragPoint("D", &D);
-	//Im2D::DragPoint("E", &E);
-	//Im2D::DragPoint("F", &F);
-	//Im2D::DragPoint("G", &G);
 
 	Im2D::DragPoint("P", &P);
-
 	static Path path = Path({
 		std::make_shared<Segment>(A, glm::vec2(), B - A),
 		std::make_shared<Segment>(D, C - D, E-D),
 		std::make_shared<Segment>(G, F-G, glm::vec2())
 	});
 
-	DragSegment(path.getFirstSegment().get());
+	Im2D::DragSegment("S0", path._segments[0].get(), "Smooth");
+	Im2D::DragSegment("S1", path._segments[1].get(), "Smooth");
+	Im2D::DragSegment("S2", path._segments[2].get(), "Smooth");
 
 	double t = path.getNearestTime(P);
 	ImGui::Text("time: %f", (float)t);

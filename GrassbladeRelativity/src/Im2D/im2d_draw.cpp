@@ -39,7 +39,13 @@ void addText(glm::vec2 P, char * fmt, ...) {
 	vsnprintf(buffer, 255, fmt, args);
 	va_end(args);
 	glm::vec2 P1 = toScreen(P);
-	window->DrawList->AddText(ImVec2(P1.x, P1.y), ImColor(255, 255, 255), buffer);
+	char * buffer_end = strstr(buffer, "##");
+	if (buffer_end) {
+		window->DrawList->AddText(ImVec2(P1.x, P1.y), ImColor(255, 255, 255), buffer, buffer_end);
+	}
+	else {
+		window->DrawList->AddText(ImVec2(P1.x, P1.y), ImColor(255, 255, 255), buffer);
+	}
 }
 
 //
