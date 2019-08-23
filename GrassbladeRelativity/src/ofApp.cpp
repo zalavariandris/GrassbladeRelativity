@@ -91,8 +91,7 @@ namespace Paper {
 	}
 
 	void draw(Path path) {
-		ofSetColor(ofColor::white);
-		auto segments{ 8 * path.getCurves().size() };
+		auto segments{ 32 * path.getCurves().size() };
 		for (auto i = 0; i < segments; i++) {
 			double t1 = (double)i / segments;
 			double t2 = ((double)i + 1.0) / segments;
@@ -200,164 +199,101 @@ void showPathDemo() {
 	cam.end();
 }
 
-void ofApp::showPath() {
-	//
-	ImGui::Begin("GrassbladeRelativity");
-	if (ImGui::ListBoxHeader("List", 2))
-	{
-		ImGui::Selectable("Selected", true);
-		ImGui::Selectable("Not Selected", false);
-		ImGui::ListBoxFooter();
-	}
-	ImGui::End();
-
-	// Create blade
-	static glm::vec2 A{  -10,    0 };
-	static glm::vec2 B{ -2, -190 };
-	static glm::vec2 C{ 40, -360 };
-
-	static glm::vec2 handleIn{ B+(A-C) * 0.25 };
-	static glm::vec2 handleOut{ B+(C-A) *0.25 };
-
-	static bool KeepHandlesSmooth{ true };
-	if (KeepHandlesSmooth) {
-		handleIn = B + (A - C) * 0.25;
-		handleOut = B + (C - A) *0.25;
-	}
-
-	ImGui::Begin("GrassbladeRelativity");
-	if (ImGui::CollapsingHeader("create blade", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Checkbox("Keep handles smooth", &KeepHandlesSmooth);
-	}
-	ImGui::End();
-
-	targetPath = Path({
-		std::make_shared<Segment>(glm::vec2( -10, 0 )),
-		std::make_shared<Segment>(glm::vec2( -2, -190), glm::vec2(0, 60), glm::vec2(0, -60)),
-		std::make_shared<Segment>(glm::vec2(40, -360))
-	});
-
-	sourcePath = Path({
-		std::make_shared<Segment>(A),
-		std::make_shared<Segment>(B, handleIn - B, handleOut - B),
-		std::make_shared<Segment>(C)
-	});
-
-	// Edit blade in viewport
-	ImGui::SetNextWindowBgAlpha(0.0);
-	ImGui::Begin("Viewport");
-	Im2D::ViewerBegin("Viewer1");
-	Im2D::DragPoint("A", &A);
-	Im2D::DragPoint("B", &B);
-	Im2D::DragPoint("C", &C);
-	if (!KeepHandlesSmooth) {
-		Im2D::DragPoint("in", &handleIn);
-		Im2D::DragPoint("out", &handleOut);
-	}
-	syncCameraToViewport(camera);
-	Im2D::ViewerEnd();
-	ImGui::End();
-
-	// extend path
-	static float extension_length{ 500.0 };
-	ImGui::Begin("GrassbladeRelativity");
-	if (ImGui::CollapsingHeader("extend grassblade", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::DragFloat("extension_length", &extension_length);
-	}
-	ImGui::End();
-	glm::vec2 tangentBegin = sourcePath.getTangentAtTime(0);
-	if (tangentBegin == glm::vec2()) {
-		double tMin = Numerical::CURVETIME_EPSILON;
-		auto firstPoint = sourcePath.getFirstSegment()->_point;
-		auto secondPoint = sourcePath.getFirstCurve()->getPointAtTime(tMin);
-		tangentBegin = secondPoint - firstPoint;
-		tangentBegin = glm::normalize(tangentBegin);
-	}
-	auto inSegment = std::make_shared<Segment>(sourcePath.getFirstSegment()->_point - tangentBegin * extension_length);
-	sourcePath.insert(0, inSegment);
-
-	glm::vec2 tangentEnd = sourcePath.getTangentAtTime(1.0);
-	
-	if (tangentEnd == glm::vec2() ) {
-		double tMax = 1.0-Numerical::CURVETIME_EPSILON; // TODO: 1-CURVETIME_EPSILON produces the same point as the last one insted one before, check glm precision and compare epsilon values from js to c++
-		auto lastButOnePoint = sourcePath.getLastCurve()->getPointAtTime(tMax);
-		auto lastPoint = sourcePath.getLastSegment()->_point;
-		cout << "lastButOnePoint: " << lastButOnePoint << endl;
-		cout << "lastPoint: " << lastPoint << endl;
-		tangentEnd = lastPoint - lastButOnePoint;
-		tangentEnd = glm::normalize(tangentEnd);
-		cout << "tangentEnd: " << tangentEnd << endl;
-	}
-	
-	auto outSegment = std::make_shared<Segment>(sourcePath.getLastSegment()->_point + tangentEnd * extension_length);
-	sourcePath.add(outSegment);
-
-	// draw blade
-	camera.begin();
-	Paper::draw(sourcePath);
-	Paper::draw(targetPath);
-	camera.end();
-
-	//create location
-	static float time{ 0.5 };
-	ImGui::Begin("GrassbladeRelativity");
-	if (ImGui::CollapsingHeader("create location", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::SliderFloat("time", &time, 0.0, 1.0);
-	}
-	ImGui::End();
-	CurveLocation loc = sourcePath.getLocationAtTime(time);
-
-	// draw Location
-	camera.begin();
-	ofSetColor(ofColor::blue);
-	ofDrawCircle(loc._point, 5);
-	ofSetColor(ofColor::darkGreen);
-	ofDrawLine(loc._point, loc._point + loc._tangent * 20);
-	ofSetColor(ofColor::red);
-	ofDrawLine(loc._point, loc._point + loc._normal * 20);
-	camera.end();
-}
-
+// basic frameworks stuff
 void ofApp::setup() {
-	// setup gui
+	/*
+	 * Setup basic stuff
+	 */
+	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.5;
+	ImGui::GetIO().FontGlobalScale = 1.0;
 
-	//setup camera
-	camera.enableOrtho();
-	camera.setNearClip(-1000);
-	camera.setFarClip(1000);
-	camera.setPosition(0, 0, 0);
-
-	// setup movie
-	SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
-	movie.load("C:/Users/andris/Pictures/2019-08/C0004.MP4");
-	movie.play();
-	movie.setPaused(true);
-	movie.setFrame(1);
-	movie.update();
-
+	//OF texture handling
 	ofDisableArbTex();
 	//ofEnableNormalizedTexCoords(); // needless with disabled ARB textures, but left it here for clarity.
 	ofSetVerticalSync(true);
 	ofSetBackgroundColor(ofColor(40, 40, 40));
+
+	// camera
+	camera.enableOrtho();
+	camera.setNearClip(-1000);
+	camera.setFarClip(1000);
+	camera.setPosition(0, 0, 0);
 	
-	plane.set(1920, 1920 * movie.getHeight() / movie.getWidth());
-	plane.setResolution(3, 3);
-	plane.mapTexCoords(0, movie.getHeight(), movie.getWidth(), 0);
+	// main 
+	setupGrassblade();
 }
 
 void ofApp::update() {
 	movie.update();
 }
 
+// main grassbalde calls
+void ofApp::setupGrassblade() {
+	// paths
+	sourcePath = Path({
+		std::make_shared<Segment>(glm::vec2(0,100), glm::vec2(), glm::vec2(-50,-50)),
+		std::make_shared<Segment>(glm::vec2(0,-100), glm::vec2(-50, 50), glm::vec2())
+	});
+
+	targetPath = Path({
+		std::make_shared<Segment>(glm::vec2(-30,100), glm::vec2(), glm::vec2(-50,-50)),
+		std::make_shared<Segment>(glm::vec2(-30,-100), glm::vec2(-50, 50), glm::vec2())
+	});
+
+	// geometry
+	plate.set(500, 500, 10, 10);
+}
+
+void ofApp::showGrassblade() {
+	ImGui::SetNextWindowBgAlpha(0.0);
+	ImGui::Begin("grassblade");
+	Im2D::ViewerBegin("viewport");
+	for (auto segment : sourcePath._segments) {
+		ImGui::PushID(segment.get());
+		Im2D::DragSegment("source", segment.get());
+		ImGui::PopID();
+	}
+	for (auto segment : targetPath._segments) {
+		ImGui::PushID(segment.get());
+		Im2D::DragSegment("target", segment.get());
+		ImGui::PopID();
+	}
+	syncCameraToViewport(camera);
+	Im2D::ViewerEnd();
+	ImGui::End();
+
+	camera.begin();
+	// deform mesh
+	plate.set(500, 500, 10, 10); // reset mesh
+	auto mesh = plate.getMeshPtr();
+	for (auto i = 0; i < mesh->getVertices().size(); i++) {
+		glm::vec2 P0 = mesh->getVertex(i);
+		auto uv = rectToPath(sourcePath, P0);
+		auto P1 = pathToRect(targetPath, uv);
+		if (!isnan(P1.x) && !isnan(P1.y)) {
+			mesh->setVertex(i, glm::vec3(P1, 0));
+		}
+	}
+
+	ofSetColor(ofColor::cadetBlue);
+	plate.draw(OF_MESH_FILL);
+	ofSetColor(ofColor::white);
+	plate.draw(OF_MESH_WIREFRAME);
+
+	ofSetColor(ofColor::cyan);
+	Paper::draw(sourcePath);
+	ofSetColor(ofColor::pink);
+	Paper::draw(targetPath);
+	camera.end();
+}
+
 void ofApp::draw() {
 	
 	gui.begin();
-	showPathDemo();
-	gui.end();
 	//showPathDemo();
-	//showPath();
+	showGrassblade();
+	gui.end();
 
 	//// deform mesh
 	//auto mesh = plane.getMesh();

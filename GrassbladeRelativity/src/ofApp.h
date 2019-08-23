@@ -14,19 +14,19 @@ class ofApp : public ofBaseApp{
 public:
 	ofxImGui::Gui gui;
 	ofCamera camera;
-	ofVideoPlayer movie;
-	ofPlanePrimitive plane;
-	ofTexture texture;
 
+	//of
+	void setup();
+	void draw();
+	void update();
+
+	// grassblade
 	Path sourcePath;
 	Path targetPath;
+	ofPlanePrimitive plate;
+	ofVideoPlayer movie;
+	ofTexture texture;
+	void setupGrassblade();
+	void showGrassblade();
 
-	void setup();
-	void showCurve();
-
-	void showPath();
-
-	void draw();
-
-	void update();
 };
