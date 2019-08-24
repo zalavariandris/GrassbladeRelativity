@@ -8,37 +8,52 @@
 class Path : public std::enable_shared_from_this<Path>
 {
 
-	int Path::_countCurves();
+	int _countCurves() const;
 	bool _closed;
 	int _version;
-	bool CurvesNeedsUpdate{ true };
-	bool LengthNeedsUpdate{ true };
-	double _length;
-public:
+
+	// caching
+	mutable bool CurvesNeedsUpdate{ true };
+	mutable bool LengthNeedsUpdate{ true };
+	mutable double _length;
+	
+	mutable std::vector<std::shared_ptr<Curve>> _curves;
 	std::vector<std::shared_ptr<Segment>> _segments;
-	std::vector<std::shared_ptr<Curve>> _curves;
+public:
+	
+
+	//constructor
 	Path();
 	Path(std::vector<std::shared_ptr<Segment>> segments);
 
-	std::vector<std::shared_ptr<Curve>> getCurves();
-	CurveLocation getLocationAt(double offset);
-	glm::vec2 getPointAt(double offset);
-	glm::vec2 getTangentAt(double offset);
-	glm::vec2 getNormalAt(double offset);
+	// accessors
+	std::vector<std::shared_ptr<Curve>> getCurves() const;
 
-	CurveLocation getLocationAtTime(double t);
-	glm::vec2 getPointAtTime(double t);
-	glm::vec2 getTangentAtTime(double t);
-	glm::vec2 getNormalAtTime(double t);
+	//
+	CurveLocation getLocationAt(double offset) const;
+	glm::vec2 getPointAt(double offset) const;
+	glm::vec2 getTangentAt(double offset) const;
+	glm::vec2 getNormalAt(double offset) const;
 
-	double Path::getNearestTime(glm::vec2 point);
+	CurveLocation getLocationAtTime(double t) const;
+	glm::vec2 getPointAtTime(double t) const;
+	glm::vec2 getTangentAtTime(double t) const;
+	glm::vec2 getNormalAtTime(double t)const;
 
-	double getLength();
+	double Path::getNearestTime(glm::vec2 point) const;
 
-	std::shared_ptr<Curve> getFirstCurve();
-	std::shared_ptr<Curve> getLastCurve();
+	double getLength() const;
 
-	void draw();
+	std::shared_ptr<Curve> getFirstCurve() const;
+	std::shared_ptr<Curve> getLastCurve() const;
+
+	std::vector<std::shared_ptr<Segment>> getSegments() const;
+	std::shared_ptr<Segment> getFirstSegment() const;
+	std::shared_ptr<Segment> getLastSegment() const;
+
+	void draw() const;
+
+	// mutte Path
 	void add(std::shared_ptr<Segment> segment);
 	void add(std::vector<std::shared_ptr<Segment>> segments);
 
@@ -48,7 +63,6 @@ public:
 	void _add(std::vector<std::shared_ptr<Segment>> segs, int index = -1);
 	void _adjustCurves(int start, int end);
 
-	std::shared_ptr<Segment> getFirstSegment();
-	std::shared_ptr<Segment> getLastSegment();
+
 };
 

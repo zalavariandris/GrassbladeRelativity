@@ -116,31 +116,31 @@ glm::vec2 Curve::evaluate(std::array<double, 8> v, double t, int type, bool norm
 	return type == 2 ? glm::vec2(y, -x) : glm::vec2(x, y);
 }
 
-glm::vec2 Curve::getPointAtTime(double t) {
+glm::vec2 Curve::getPointAtTime(double t) const {
 	return evaluate(getValues(), t, 0, false);
 };
 
-glm::vec2 Curve::getTangentAtTime(double t) {
+glm::vec2 Curve::getTangentAtTime(double t) const{
 	return evaluate(getValues(), t, 1, true);
 };
 
-glm::vec2 Curve::getWeightedTangentAtTime(double t) {
+glm::vec2 Curve::getWeightedTangentAtTime(double t) const{
 	return evaluate(getValues(), t, 1, false);
 };
 
-glm::vec2 Curve::getNormalAtTime(double t) {
+glm::vec2 Curve::getNormalAtTime(double t) const{
 	return evaluate(getValues(), t, 2, true);
 };
 
-glm::vec2 Curve::getWeightedNormalAtTime( double t) {
+glm::vec2 Curve::getWeightedNormalAtTime( double t) const {
 	return evaluate(getValues(), t, 2, false);
 };
 
-double Curve::getCurvatureAtTime(double t) {
+double Curve::getCurvatureAtTime(double t) const{
 	return evaluate(getValues(), t, 3, false).x;
 };
 
-double Curve::getNearestTime(glm::vec2 point) {
+double Curve::getNearestTime(glm::vec2 point) const{
 	/* rewritten from paper.js*/
 	const int count = 100;
 	double minDist = std::numeric_limits<double>::infinity();
@@ -172,7 +172,7 @@ double Curve::getNearestTime(glm::vec2 point) {
 	return minT;
 }
 
-std::function<double(double)> Curve::getLengthIntegrand() {
+std::function<double(double)> Curve::getLengthIntegrand() const{
 	auto v = getValues();
 	double x0 = v[0]; double y0 = v[1];
 	double x1 = v[2]; double y1 = v[3];
@@ -197,7 +197,7 @@ std::function<double(double)> Curve::getLengthIntegrand() {
 }
 
 // Amount of integral evaluations for the interval 0 <= a < b <= 1
-int Curve::getIterations(double a, double b) {
+int Curve::getIterations(double a, double b) const{
 	// Guess required precision based and size of range...
 	// TODO: There should be much better educated guesses for
 	// this. Also, what does this depend on? Required precision?
@@ -205,15 +205,15 @@ int Curve::getIterations(double a, double b) {
 	return Numerical::getMax({ 2, Numerical::getMin({ 16, ceil(abs(b - a) * 32) }) });
 }
 
-double Curve::getLength(double a, double b) {
+double Curve::getLength(double a, double b) const{
 	return getLength(a, b, getLengthIntegrand());
 }
 
-double Curve::getLength(double a, double b, std::function<double(double)> ds) {
+double Curve::getLength(double a, double b, std::function<double(double)> ds) const{
 	return Numerical::integrate(ds, a, b, getIterations(a, b));
 }
 
-void Curve::draw() {
+void Curve::draw() const{
 	const int segments{ 8 };
 	for (int i = 0; i < segments; i++) {
 		glm::vec2 P1 = getPointAtTime((double)i / segments);
@@ -222,7 +222,7 @@ void Curve::draw() {
 	};
 }
 
-CurveLocation Curve::getLocationAtTime(double t) {
+CurveLocation Curve::getLocationAtTime(double t) const {
 	return CurveLocation(*this, t);
 }
 
@@ -231,11 +231,11 @@ bool isClose(glm::vec2 P, glm::vec2 Q, double epsilon = Numerical::EPSILON) {
 	return glm::distance(P, Q) < epsilon;
 }
 
-CurveLocation Curve::getLocationOf(glm::vec2 point) {
+CurveLocation Curve::getLocationOf(glm::vec2 point) const{
 	return getLocationAtTime(getTimeOf(point));
 }
 
-double Curve::getTimeOf(glm::vec2 point) {
+double Curve::getTimeOf(glm::vec2 point) const {
 	auto v = getValues();
 	glm::vec2 p0{ v[0], v[1] };
 	glm::vec2 p3{ v[6], v[7] };
@@ -277,11 +277,11 @@ double Curve::solveCubic(std::array<double, 8> v, int coord, double val, std::ve
 	return res;
 }
 
-CurveLocation Curve::getLocationAt(double offset) {
+CurveLocation Curve::getLocationAt(double offset) const {
 	return getLocationAtTime(getTimeAt(offset));
 }
 
-double Curve::getTimeAt(double offset, double start) {
+double Curve::getTimeAt(double offset, double start) const {
 	if (isnan(start))
 		start = offset < 0 ? 1 : 0;
 	if (offset == 0)
@@ -328,7 +328,7 @@ double Curve::getTimeAt(double offset, double start) {
 		/*#=*/Numerical::EPSILON);
 }
 
-std::array<double, 8> Curve::getValues() {
+std::array<double, 8> Curve::getValues() const {
 	glm::vec2 p1 = _segment1->_point;
 	glm::vec2 h1 = _segment1->_handleOut;
 	glm::vec2 h2 = _segment2->_handleIn;

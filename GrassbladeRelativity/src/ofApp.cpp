@@ -29,7 +29,7 @@ glm::vec2 field(glm::vec2 pos, std::function<glm::vec2(glm::vec2)> f) {
 	return f(pos);
 }
 
-glm::vec2 rectToCurve(Curve & curve, glm::vec2 xy) {
+glm::vec2 rectToCurve(Curve const & curve, glm::vec2 xy) {
 	double t = curve.getNearestTime(xy);
 	auto Q = curve.getPointAtTime(t);
 	double distance = glm::distance(xy, Q);
@@ -42,7 +42,7 @@ glm::vec2 rectToCurve(Curve & curve, glm::vec2 xy) {
 	return uv;
 }
 
-glm::vec2 rectToPath(Path & path, glm::vec2 xy) {
+glm::vec2 rectToPath(Path const & path, glm::vec2 xy) {
 	double t = path.getNearestTime(xy);
 	auto Q = path.getPointAtTime(t);
 	double distance = glm::distance(xy, Q);
@@ -178,9 +178,9 @@ void showPathDemo() {
 		std::make_shared<Segment>(G, F-G, glm::vec2())
 	});
 
-	Im2D::DragSegment("S0", path._segments[0].get(), "Smooth");
-	Im2D::DragSegment("S1", path._segments[1].get(), "Smooth");
-	Im2D::DragSegment("S2", path._segments[2].get(), "Smooth");
+	Im2D::DragSegment("S0", path.getSegments()[0].get(), "Smooth");
+	Im2D::DragSegment("S1", path.getSegments()[1].get(), "Smooth");
+	Im2D::DragSegment("S2", path.getSegments()[2].get(), "Smooth");
 
 	double t = path.getNearestTime(P);
 	ImGui::Text("time: %f", (float)t);
@@ -249,12 +249,12 @@ void ofApp::showGrassblade() {
 	ImGui::SetNextWindowBgAlpha(0.0);
 	ImGui::Begin("grassblade");
 	Im2D::ViewerBegin("viewport");
-	for (auto segment : sourcePath._segments) {
+	for (auto segment : sourcePath.getSegments()) {
 		ImGui::PushID(segment.get());
 		Im2D::DragSegment("source", segment.get());
 		ImGui::PopID();
 	}
-	for (auto segment : targetPath._segments) {
+	for (auto segment : targetPath.getSegments()) {
 		ImGui::PushID(segment.get());
 		Im2D::DragSegment("target", segment.get());
 		ImGui::PopID();

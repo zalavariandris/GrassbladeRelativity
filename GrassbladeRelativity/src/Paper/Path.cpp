@@ -13,7 +13,9 @@ Path::Path(std::vector<std::shared_ptr<Segment>> segments) {
 	_closed = false;
 }
 
-void Path::draw() {
+
+
+void Path::draw() const{
 	for (auto curve : getCurves()) {
 		curve->draw();
 	}
@@ -23,7 +25,7 @@ void Path::draw() {
 	Returns the curve location of the specified offset on the path.
 	TODO: handle negative values.
 */
-CurveLocation Path::getLocationAt(double offset) {
+CurveLocation Path::getLocationAt(double offset) const{
 	if (offset < 0)
 		return CurveLocation();
 
@@ -49,15 +51,15 @@ CurveLocation Path::getLocationAt(double offset) {
 	return CurveLocation(); 
 }
 
-std::shared_ptr<Curve> Path::getFirstCurve() {
+std::shared_ptr<Curve> Path::getFirstCurve() const{
 	return getCurves()[0];
 }
-std::shared_ptr<Curve> Path::getLastCurve(){
+std::shared_ptr<Curve> Path::getLastCurve() const {
 	auto curves = getCurves();
 	return curves[curves.size() - 1];
 }
 
-double Path::getNearestTime(glm::vec2 point) {
+double Path::getNearestTime(glm::vec2 point) const {
 	auto curves = getCurves();
 	double minDist = std::numeric_limits<double>::infinity();
 	double minT;
@@ -75,7 +77,7 @@ double Path::getNearestTime(glm::vec2 point) {
 	return (minT+index)/curves.size();
 };
 
-CurveLocation Path::getLocationAtTime(double t) {
+CurveLocation Path::getLocationAtTime(double t) const {
 	//
 	if (t < 0.0 || t>1.0 || isnan(t))
 		return CurveLocation();
@@ -99,53 +101,53 @@ CurveLocation Path::getLocationAtTime(double t) {
 	return curves[i]->getLocationAtTime(curveTime);
 }
 
-glm::vec2 Path::getPointAtTime(double t) {
+glm::vec2 Path::getPointAtTime(double t) const {
 	CurveLocation loc = getLocationAtTime(t);
 	if(loc)
 		return loc._point;
 	return glm::vec2(NAN);
 }
 
-glm::vec2 Path::getNormalAtTime(double t) {
+glm::vec2 Path::getNormalAtTime(double t) const {
 	CurveLocation loc = getLocationAtTime(t);
 	if(loc)
 		return loc._curve.getNormalAtTime(loc._time);
 	return glm::vec2(NAN);
 }
 
-glm::vec2 Path::getTangentAtTime(double t) {
+glm::vec2 Path::getTangentAtTime(double t) const {
 	CurveLocation loc = getLocationAtTime(t);
 	if (loc)
 		return loc._curve.getTangentAtTime(loc._time);
 	return glm::vec2(NAN);
 }
 
-glm::vec2 Path::getPointAt(double offset) {
+glm::vec2 Path::getPointAt(double offset) const {
 	CurveLocation loc = getLocationAt(offset);
 	if(loc)
 		return loc._point;
 	return glm::vec2(NAN);
 }
 
-glm::vec2 Path::getTangentAt(double offset) {
+glm::vec2 Path::getTangentAt(double offset) const {
 	CurveLocation loc = getLocationAt(offset);
 	if(loc)
 		return loc._curve.getTangentAtTime(loc._time);
 	return glm::vec2(NAN);
 }
 
-glm::vec2 Path::getNormalAt(double offset) {
+glm::vec2 Path::getNormalAt(double offset) const {
 	CurveLocation loc = getLocationAt(offset);
 	return loc._curve.getNormalAtTime(loc._time);
 }
 
-int Path::_countCurves() {
+int Path::_countCurves() const{
 	auto length = _segments.size();
 	// Reduce length by one if it's an open path:
 	return !_closed && length > 0 ? length - 1 : length;
 }
 
-std::vector<std::shared_ptr<Curve>> Path::getCurves() {
+std::vector<std::shared_ptr<Curve>> Path::getCurves() const{
 	if (CurvesNeedsUpdate) {
 		auto length = _countCurves();
 		_curves = std::vector<std::shared_ptr<Curve>>(length);
@@ -160,7 +162,7 @@ std::vector<std::shared_ptr<Curve>> Path::getCurves() {
 	return _curves;
 }
 
-double Path::getLength() {
+double Path::getLength() const{
 	if (LengthNeedsUpdate) {
 		auto curves = getCurves();
 		double length = 0;
@@ -268,10 +270,14 @@ void Path::_adjustCurves(int start, int end) {
 	}
 };
 
-std::shared_ptr<Segment> Path::getFirstSegment() {
+std::shared_ptr<Segment> Path::getFirstSegment() const {
 	return _segments[0];
 }
 
-std::shared_ptr<Segment> Path::getLastSegment() {
+std::shared_ptr<Segment> Path::getLastSegment() const {
 	return _segments[_segments.size() - 1];
+}
+
+std::vector<std::shared_ptr<Segment>> Path::getSegments() const {
+	return _segments;
 }
