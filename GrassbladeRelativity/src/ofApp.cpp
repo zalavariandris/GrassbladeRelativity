@@ -1,6 +1,9 @@
 #include "ofApp.h"
 #include "Paper/numerical.h"
 #include "Im2DPaper/Im2DPaper.h"
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include "imgui_internal.h"
 
 glm::vec2 curveToRect(Curve & curve, glm::vec2 uv) {
 	double distance = uv.x;
@@ -199,6 +202,154 @@ void showPathDemo() {
 	cam.end();
 }
 
+class Reader {
+	cv::VideoCapture _cap;
+	std::string _file;
+	std::vector<ofImage> _cache;
+	bool _useCache{ true };
+public:
+	Reader(std::string file, bool useCache){
+		if (_cap.open(file)) {
+			_file = file;
+		}
+		_useCache = useCache;
+		_cache = std::vector<ofImage>(getFrameCount());
+	}
+
+	bool validateFrame(int frame) const{
+		return frame >= 0 && frame < getFrameCount();
+	}
+
+	void enableCache() {
+		_useCache = true;
+	}
+
+	void disableCache() {
+		_useCache = false;
+	}
+
+	cv::Mat getMatAtFrame(int frame) {
+		cv::Mat mat;
+		if (validateFrame(frame)) {
+			_cap.set(cv::CAP_PROP_POS_FRAMES, frame);
+			_cap >> mat;
+		}
+		return mat;
+	}
+
+	int getFrameCount() const{
+		return _cap.get(cv::CAP_PROP_FRAME_COUNT);
+	}
+
+	int getWidth() {
+		return _cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	}
+
+	int getHeight() {
+		return _cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	}
+
+	int getCurrentFrame() {
+		return _cap.get(cv::CAP_PROP_POS_FRAMES);
+	}
+
+	std::string getFile() {
+		return _file;
+	}
+
+	~Reader() {
+		_cap.release();
+	}
+
+	bool hasCacheAtFrame(int frame) const {
+		return validateFrame(frame) ? _cache[frame].isAllocated() : false;
+	}
+
+	ofImage getImageAtFrame(int frame) {
+		if (!validateFrame(frame))
+			return ofImage();
+		if (_useCache && hasCacheAtFrame(frame))
+			return _cache[frame];
+
+		auto mat = getMatAtFrame(frame);
+		ofImage img;
+		img.setFromPixels(mat.data, mat.cols, mat.rows, OF_IMAGE_COLOR, false);
+		if (_useCache)
+			_cache[frame] = img;
+		return img;
+	}
+
+	ofImage play() {
+		cv::Mat mat;
+		ofImage img;
+		if (_cap.read(mat)) {
+			
+			img.setFromPixels(mat.data, mat.cols, mat.rows, OF_IMAGE_COLOR, false);
+		}
+		return img;
+	}
+};
+
+namespace ImGui {
+	bool Timeslider(char * label_id, int * frame, int v_min, int v_max, Reader const & reader) {
+		bool changed{ false };
+
+		ImVec2 screenPos = ImGui::GetCursorScreenPos();
+		
+		if (ImGui::SliderInt(label_id, frame, v_min, v_max)) {
+			changed = true;
+		}
+		auto window = ImGui::GetCurrentWindow();
+		int left;
+		int right;
+		auto isCached = [&](int f) {
+			return reader.hasCacheAtFrame(f);
+		};
+		auto singleWidth = ImGui::CalcItemWidth() / (v_max - v_min);
+		for (auto i = v_min; i < v_max; i++) {
+			if (isCached(i)) {
+				window->DrawList->AddRect(
+					ImVec2(screenPos.x+i*singleWidth, screenPos.y), 
+					ImVec2(screenPos.x+(i + 1)*singleWidth, screenPos.y+10), 
+					ImColor(0, 255, 0)
+				);
+			}
+		}
+		return changed;
+	}
+}
+
+void showCVReadDemo() {
+	static Reader reader("C:/Users/andris/Pictures/2019-08/IMG_6926.MOV", false);
+
+	static int myFrameNumber{ 0 };
+
+
+	ImGui::SliderInt("frame", &myFrameNumber, 0, reader.getFrameCount()-1);
+	ImGui::Text("%f.0 fps", ofGetFrameRate());
+	ImGui::Text("%s", reader.getFile().c_str());
+	ImGui::Text("current frame: %i", reader.getCurrentFrame());
+	ImGui::Timeslider("timeslider", &myFrameNumber, 0, reader.getFrameCount(), reader);
+
+	if (reader.hasCacheAtFrame(myFrameNumber)) {
+		ofSetColor(ofColor::green);
+		ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
+	}
+	auto border = 2;
+	//ofImage img = reader.getImageAtFrame(myFrameNumber);
+	ofImage img = reader.play();
+
+	float MB = 0.0;
+	float MPPerFrame = 3*img.getWidth()*img.getHeight() / 1000000.0;
+	for (int i = 0; i < reader.getFrameCount(); i++) {
+		if (reader.hasCacheAtFrame(i))
+			MB+=MPPerFrame;
+	}
+	ImGui::Text("%.0fmb", MB);
+	ofSetColor(ofColor::white);
+	img.draw(border, border, ofGetWidth()-border*2, ofGetHeight()-border*2);	
+}
+
 // basic frameworks stuff
 void ofApp::setup() {
 	/*
@@ -206,7 +357,7 @@ void ofApp::setup() {
 	 */
 	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.0;
+	ImGui::GetIO().FontGlobalScale = 1.5;
 
 	//OF texture handling
 	ofDisableArbTex();
@@ -225,7 +376,7 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
-	movie.update();
+	
 }
 
 // main grassbalde calls
@@ -243,6 +394,7 @@ void ofApp::setupGrassblade() {
 
 	// geometry
 	plate.set(500, 500, 10, 10);
+
 }
 
 void ofApp::showGrassblade() {
@@ -263,7 +415,9 @@ void ofApp::showGrassblade() {
 	Im2D::ViewerEnd();
 	ImGui::End();
 
+	// render with OF
 	camera.begin();
+
 	// deform mesh
 	plate.set(500, 500, 10, 10); // reset mesh
 	auto mesh = plate.getMeshPtr();
@@ -292,26 +446,9 @@ void ofApp::draw() {
 	
 	gui.begin();
 	//showPathDemo();
-	showGrassblade();
+	//showReaderDemo();
+	showCVReadDemo();
+	//showGrassblade();
 	gui.end();
-
-	//// deform mesh
-	//auto mesh = plane.getMesh();
-	//for (auto i = 0; i < mesh.getVertices().size(); i++) {
-	//	glm::vec2 P0 = plane.getMesh().getVertex(i);
-	//	auto uv = rectToPath(sourcePath, P0);
-	//	auto P1 = pathToRect(targetPath, uv);
-	//	if (!isnan(P1.x) && !isnan(P1.y)) {
-	//		mesh.setVertex(i, glm::vec3(P1, 0));
-	//	}
-	//}
-	// draw emsh
-	//camera.begin();
-	//texture = movie.getTexture();
-	//ofSetColor(ofColor(255, 255, 255, 128));
-	//texture.bind();
-	//plane.draw(OF_MESH_WIREFRAME);
-	//texture.unbind();
-	//camera.end();
 }
 

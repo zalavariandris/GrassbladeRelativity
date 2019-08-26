@@ -24,9 +24,7 @@ public:
 	Path sourcePath;
 	Path targetPath;
 	ofPlanePrimitive plate;
-	ofVideoPlayer movie;
 	ofTexture texture;
 	void setupGrassblade();
 	void showGrassblade();
-
 };
