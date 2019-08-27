@@ -1,6 +1,9 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#include <opencv2/imgproc.hpp> // for: color conversion
+#include <opencv2/imgproc/types_c.h> // for: CV_BGR2RGBA
+
 #include <string>
 #include "ofImage.h"
 #include <iostream>
@@ -26,22 +29,23 @@ private:
 		}
 		else if (frame == getCurrentFrame()+1) {
 			// play next frame
-			std::cout << "play" << std::endl;
-			_cap.read(buffer);
+			cv::Mat mat;
+			_cap.read(mat);
+			cv::cvtColor(mat, buffer, CV_BGR2RGB);
+
 			return buffer.data;
 		}
 		else {
 			// seek to specified frame
-			std::cout << "seek" << std::endl;
 			_cap.set(cv::CAP_PROP_POS_FRAMES, frame);
-			_cap >> buffer;
+
+			// read and convert to rgb
+			cv::Mat mat;
+			_cap >> mat;
+			cv::cvtColor(mat, buffer, CV_BGR2RGB);
+
 			return buffer.data;
 		}
-	}
-
-	uchar * getDataNextFrame() {
-		_cap.read(buffer);
-		return buffer.data;
 	}
 
 private:
@@ -95,6 +99,7 @@ public:
 		if (!validateFrame(frame))
 			return ofImage();
 
+		// load to of image
 		ofImage img;
 		img.setFromPixels(getDataAtFrame(frame), getWidth(), getHeight(), OF_IMAGE_COLOR, false);
 		return img;
