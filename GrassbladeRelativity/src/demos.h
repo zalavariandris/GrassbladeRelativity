@@ -222,6 +222,7 @@ glm::vec2 getValueAtFrame(vector<Key> keys, double frame) {
 	return lerp(p0, p1, t);
 };
 
+
 void showGraphEditorDemo() {
 	ImGui::Begin("GraphEditorDemo");
 	static int F{ 0 };
