@@ -33,6 +33,7 @@
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
     <ClCompile Include="src\Paper\CurveLocation.cpp" />
+    <ClCompile Include="src\Reader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -90,6 +91,8 @@
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
     <ClInclude Include="src\Paper\CurveLocation.h" />
     <ClInclude Include="src\Im2DPaper\Im2DPaper.h" />
+    <ClInclude Include="src\Reader.h" />
+    <ClInclude Include="src\demos.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
