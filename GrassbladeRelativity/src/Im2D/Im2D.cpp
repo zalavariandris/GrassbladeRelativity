@@ -101,7 +101,7 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size) {
 	ImGuiID id = window->GetID(label_id);
 
 	static std::map<ImGuiID, glm::mat3> storage_mat;
-	glm::mat3 viewMatrix = storage_mat.count(id) > 0 ? storage_mat[id] : glm::mat3();
+	glm::mat3 viewMatrix = storage_mat.count(id) > 0 ? storage_mat[id] : glm::mat3(1);
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
 	
 	ImVec2 viewportSize = ImGui::GetContentRegionAvail();

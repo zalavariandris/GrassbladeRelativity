@@ -65,7 +65,7 @@ void ofApp::setup() {
 	 */
 	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.0;
+	ImGui::GetIO().FontGlobalScale = 1.5;
 
 	//OF texture handling
 	ofDisableArbTex();
@@ -155,7 +155,7 @@ void ofApp::draw() {
 	
 	gui.begin();
 	//showDemos();
-	showGraphEditorDemo();
+	//showGraphEditorDemo();
+	showAnimationDemo();
 	gui.end();
 }
-
