@@ -209,7 +209,17 @@ namespace {
 	public:
 		bool selected{ false };
 		AnimationCurve() {};
-		AnimationCurve(std::vector<Key> keys) :_keys(keys) {};
+		AnimationCurve(std::vector<Key> keys) {
+			setKeys(keys);
+		};
+
+		void setKeys(std::vector<Key> keys) {
+			_keys = keys;
+			std::sort(_keys.begin(), _keys.end(), [](auto A, auto B) {
+				return A.frame < B.frame;
+			});
+		}
+
 		glm::vec2 getValueAtFrame(double frame) const{
 			if (_keys.empty())
 				return glm::vec2();
@@ -283,29 +293,29 @@ void showGraphEditorDemo() {
 		Key(25,{250,100})
 	});
 
-	ImGui::PlotLines("X", [](void*data, int idx) {
-		AnimationCurve animCurve({
-			Key(0,{0,600}),
-			Key(5,{50,500}),
-			Key(10,{100,100}),
-			Key(15,{150,300}),
-			Key(20,{200,100}),
-			Key(25,{250,100})
-		});
-		return animCurve.getValueAtFrame(idx).x;
-	}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
+	//ImGui::PlotLines("X", [](void*data, int idx) {
+	//	AnimationCurve animCurve({
+	//		Key(0,{0,600}),
+	//		Key(5,{50,500}),
+	//		Key(10,{100,100}),
+	//		Key(15,{150,300}),
+	//		Key(20,{200,100}),
+	//		Key(25,{250,100})
+	//	});
+	//	return animCurve.getValueAtFrame(idx).x;
+	//}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
 
-	ImGui::PlotLines("Y", [](void*data, int idx) {
-		AnimationCurve animCurve({
-			Key(0,{0,600}),
-			Key(5,{50,500}),
-			Key(10,{100,100}),
-			Key(15,{150,300}),
-			Key(20,{200,100}),
-			Key(25,{250,100})
-		});
-		return animCurve.getValueAtFrame(idx).x;
-	}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
+	//ImGui::PlotLines("Y", [](void*data, int idx) {
+	//	AnimationCurve animCurve({
+	//		Key(0,{0,600}),
+	//		Key(5,{50,500}),
+	//		Key(10,{100,100}),
+	//		Key(15,{150,300}),
+	//		Key(20,{200,100}),
+	//		Key(25,{250,100})
+	//	});
+	//	return animCurve.getValueAtFrame(idx).x;
+	//}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
 	ImGui::End();
 
 	
@@ -333,7 +343,7 @@ void showAnimationDemo() {
 	// Logic
 	if (play)
 		F++;
-	if (F >= end)
+	if (F > end)
 		F = begin;
 	if (F < begin)
 		F = end;
@@ -367,11 +377,28 @@ void showAnimationDemo() {
 			end = begin;
 
 		// time controls
-		if (ImGui::Button("Play"))
+		auto style = ImGui::GetStyle();
+		float btnWidth = 25;
+		ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth()/2-(btnWidth *6+2*style.ItemSpacing.x)/2);
+		ImGui::BeginGroup();
+		if (ImGui::Button("|<<", ImVec2(btnWidth, 20)))
+			F = begin;
+		ImGui::SameLine();
+		if (ImGui::Button("|<", ImVec2(btnWidth, 20)))
+			F--;
+		ImGui::SameLine();
+		if (ImGui::Button("||", ImVec2(btnWidth, 20)))
+			play = false;
+		ImGui::SameLine();
+		if (ImGui::Button(">", ImVec2(btnWidth,20)))
 			play = true;
 		ImGui::SameLine();
-		if (ImGui::Button("pause"))
-			play = false;
+		if (ImGui::Button(">|", ImVec2(btnWidth, 20)))
+			F++;
+		ImGui::SameLine();
+		if (ImGui::Button(">>|", ImVec2(btnWidth, 20)))
+			F = end;
+		ImGui::EndGroup();
 
 	}ImGui::End();
 
@@ -409,12 +436,12 @@ void showAnimationDemo() {
 
 	}ImGui::End();
 	
-	ImGui::Begin("GraphEditor"); 
+	ImGui::Begin("Plot"); 
 	{
 		// convert keys to data;
-		std::vector<float> plotX(end - begin);
-		std::vector<float> plotY(end - begin);
-		for (auto f = begin; f < end; f++) {
+		std::vector<float> plotX(end+1 - begin);
+		std::vector<float> plotY(end+1- begin);
+		for (auto f = begin; f < end+1; f++) {
 			auto pos = animCurve.getValueAtFrame(f);
 			plotX[f-begin] = pos.x;
 			plotY[f-begin] = pos.y;
@@ -422,6 +449,46 @@ void showAnimationDemo() {
 		float scale_min = -600, scale_max = 600;
 		ImGui::PlotLines("x", plotX.data(), plotX.size(), 0, "posX", scale_min, scale_max, ImVec2(300, 150));
 		ImGui::PlotLines("y", plotY.data(), plotY.size(), 0, "posY", scale_min, scale_max, ImVec2(300, 150));
+	}ImGui::End();
+
+	ImGui::Begin("GraphEditor");
+	{
+		Im2D::ViewerBegin("viewport", ImVec2(), Im2DViewportFlags_AllowNonUniformZoom);
+		// draw anim curve
+		auto & keys = animCurve.getKeys();
+		for (auto i = 0; i < keys.size()-1; i++) {
+			Key keyA = keys.at(i);
+			Key keyB = keys.at(i+1);
+
+			// draw x curve
+			glm::vec2 posAx = glm::vec2(keyA.frame*10, keyA.pos.x );
+			glm::vec2 posBx = glm::vec2(keyB.frame*10, keyB.pos.x);
+
+			addLineSegment(posAx, posBx, ImColor(255,0,0));
+
+			// draw y curve
+			glm::vec2 posAy = glm::vec2(keyA.frame * 10, keyA.pos.y);
+			glm::vec2 posBy = glm::vec2(keyB.frame * 10, keyB.pos.y);
+			addLineSegment(posAy, posBy, ImColor(0, 255, 0));
+		}
+		for (auto & key : keys) {
+			ImGui::PushID(&key);
+			glm::vec2 Cx = glm::vec2(key.frame * 10, key.pos.x);
+			if (Im2D::DragPoint("##Cx", &Cx, 4.0)) {
+				key.frame = Cx.x / 10;
+				key.pos.x = Cx.y;
+			}
+			glm::vec2 Cy = glm::vec2(key.frame * 10, key.pos.y);
+			if (Im2D::DragPoint("##Cy", &Cy, 4.0)) {
+				key.frame = Cy.x / 10;
+				key.pos.y = Cy.y;
+			}
+			ImGui::PopID();
+		}
+
+		// 
+		addLineSegment({ F * 10,0 }, { F * 10,500 }, ImColor(255,255,0, 128));
+		Im2D::ViewerEnd();
 	}ImGui::End();
 }
 

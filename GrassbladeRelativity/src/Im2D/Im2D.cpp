@@ -49,7 +49,7 @@ bool Im2D::DragBezierSegment(char * str_id, glm::vec2 * A, glm::vec2 * B, glm::v
 }
 
 // Viewer
-bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix) {
+bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, bool IndependentZoom=false) {
 	bool changed{ false };
 	ImGui::InvisibleButton(str_id, size);
 	ImGui::SetItemAllowOverlap();
@@ -62,14 +62,14 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix) 
 		ImGui::ActivateItem(ImGui::GetItemID());
 	}
 
-	float zoom = (*viewMatrix)[0][0];
-	glm::vec2 pan((*viewMatrix)[2][0] / zoom, (*viewMatrix)[2][1] / zoom);
+	glm::vec2 zoom = glm::vec2( (*viewMatrix)[0][0], (*viewMatrix)[1][1] ); // get zoom
+	glm::vec2 pan((*viewMatrix)[2][0] / zoom.x, (*viewMatrix)[2][1] / zoom.y); //get pan
 
-	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) ||
+	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) && !ImGui::GetIO().KeyAlt ||
 		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt))) {
-		float scale = (*viewMatrix)[0][0];
-		float h = io.MouseDelta.x * 1 / scale; // horizontal
-		float v = io.MouseDelta.y * 1 / scale; // vertical
+		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
+		float h = io.MouseDelta.x * 1 / scale.x; // horizontal
+		float v = io.MouseDelta.y * 1 / scale.y; // vertical
 
 		pan += glm::vec2(h, v);
 		changed = true;
@@ -78,20 +78,30 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix) 
 	// handle scale with mouse wheel
 	if (io.MouseWheel != 0 && ImGui::IsItemHovered(ImGuiHoveredFlags_None)) {
 		zoom *= 1 + io.MouseWheel*0.1;
-
 		changed = true;
 	}
 
+	// handle nonuniform scale with middlemouse+alt
+	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt)) {
+		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
+		float h = io.MouseDelta.x * 1; // horizontal
+		float v = io.MouseDelta.y * -1; // vertical
+		
+		zoom *= glm::vec2(1 + h*0.01, 1 + v * 0.01);
+		std::cout << "non uniform zoom: " << zoom.x << ", " << zoom.y << std::endl;
+		changed = true;
+	}
+	 
 	if (changed) {
-		*viewMatrix = glm::mat3({ zoom,0,0,
-						0,zoom,0,
-						pan.x*zoom, pan.y*zoom, 1 });
+		*viewMatrix = glm::mat3({       zoom.x,          0, 0,
+						                   0,       zoom.y, 0,
+						          pan.x*zoom.x, pan.y*zoom.y, 1 });
 	}
 
 	return changed;
 }
 
-void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size) {
+void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFlags_ flags) {
 	ImGui::BeginChild(label_id, size, true,
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoScrollbar |
@@ -113,7 +123,7 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size) {
 
 	// Screen control
 	ImGui::SetCursorScreenPos(cursorScreenPos);
-	if (ScreenControls("ViewerControls", viewportSize, &viewMatrix)) {
+	if (ScreenControls("ViewerControls", viewportSize, &viewMatrix), true) {
 		storage_mat[id] = viewMatrix;
 	}
 
@@ -130,7 +140,8 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size) {
 	ImGui::Text(label_id);
 
 	// Add adaptive grid
-	addGrid();
+	if(flags & Im2DViewportFlags_Grid)
+		addGrid();
 }
 
 void Im2D::ViewerEnd() {
