@@ -154,10 +154,7 @@ void ofApp::showGrassblade() {
 void ofApp::draw() {
 	
 	gui.begin();
-	//showDemos();
-	//showGraphEditorDemo();
 	//ImGui::ShowDemoWindow();
-	showAnimationDemo();
-	//showGraphEditorDemo();
+	showDemos();
 	gui.end();
 }

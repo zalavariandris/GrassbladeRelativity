@@ -6,6 +6,50 @@
 #include "Im2D/Im2D.h"
 #include "Im2D/im2d_draw.h"
 
+void TimeSlider(const char * label_id, int * frame, bool * play, int * begin, int * end) {
+	// time slider
+	ImGui::BeginGroup();
+	ImGui::PushItemWidth(50);
+	ImGui::DragInt("##begin", begin);
+	if (*begin >= *end)
+		*begin = *end;
+	ImGui::SameLine();
+	ImGui::PushItemWidth(ImGui::GetWindowContentRegionWidth() - 2 * (ImGui::GetWindowContentRegionWidth() - ImGui::GetContentRegionAvailWidth()));
+	ImGui::SliderInt("##frame", frame, *begin, *end);
+	ImGui::SameLine();
+	ImGui::PushItemWidth(50);
+	ImGui::DragInt("##end", end);
+	if (*end <= *begin)
+		*end = *begin;
+
+	// time controls
+	auto style = ImGui::GetStyle();
+	float btnWidth = ImGui::GetFontSize()*1.5;
+	float btnHeight = btnWidth;
+	ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth() / 2 - (btnWidth * 6 + 2 * style.ItemSpacing.x) / 2);
+	ImGui::BeginGroup();
+	if (ImGui::Button("|<<", ImVec2(btnWidth, btnHeight)))
+		(*frame) = (*begin);
+	ImGui::SameLine();
+	if (ImGui::Button("|<", ImVec2(btnWidth, btnHeight)))
+		(*frame)--;
+	ImGui::SameLine();
+	if (ImGui::Button("||", ImVec2(btnWidth, btnHeight)))
+		*play = false;
+	ImGui::SameLine();
+	if (ImGui::Button(">", ImVec2(btnWidth, btnHeight)))
+		*play = true;
+	ImGui::SameLine();
+	if (ImGui::Button(">|", ImVec2(btnWidth, btnHeight)))
+		(*frame)++;
+	ImGui::SameLine();
+	if (ImGui::Button(">>|", ImVec2(btnWidth, btnHeight)))
+		*frame = *end;
+	ImGui::EndGroup();//end buttons group
+	ImGui::EndGroup();//end timeslider group
+}
+
+
 /* utilities */
 namespace {
 	void syncCameraToViewport(ofCamera & camera) {
@@ -149,31 +193,21 @@ void showPathDemo() {
 }
 
 void showReadDemo() {
-	//auto file = ofToDataPath("framecounter.mov");
-	auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";
+	auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";/*test file: ofToDataPath("framecounter.mov")*/
 	static Reader reader(file, false);
-
 	ImGui::Text("file: %s", !reader.getFile().empty() ? reader.getFile().c_str() : "-no file-");
-	
 	ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
 	ImGui::Separator();
 
 	int start{ 0 };
 	int end{ reader.getFrameCount()-1 };
 	static int F{ 0 };
-	float fullWidth = ImGui::GetWindowContentRegionWidth();
-	ImGui::PushItemWidth(50);
-	ImGui::DragInt("##start", &start);
-	ImGui::SameLine();
-	ImGui::PushItemWidth(fullWidth-2*(fullWidth-ImGui::GetContentRegionAvailWidth()));
-	ImGui::SliderInt("##frame", &F, start, end);
-	ImGui::SameLine();
-	ImGui::PushItemWidth(50);
-	ImGui::DragInt("##end", &end);
 	static bool play{ false };
-	ImGui::Checkbox("Play", &play);
+	TimeSlider("timeslider", &F, &play, &start, &end);
+	
 	if (play)
 		F++;
+
 	if (F >= reader.getFrameCount())
 		F = 0;
 
@@ -308,9 +342,9 @@ public:
 	}
 };
 
-void GraphEditor(std::vector<AnimCurve*> curves, int * F) {
+void GraphEditor(const char * label_id, std::vector<AnimCurve*> curves, int * F) {
 	// start viewer
-	Im2D::ViewerBegin("grapheditor", ImVec2(), Im2DViewportFlags_Grid | Im2DViewportFlags_AllowNonUniformZoom);
+	Im2D::ViewerBegin(label_id, ImVec2(), Im2DViewportFlags_Grid | Im2DViewportFlags_AllowNonUniformZoom);
 
 	/*
 	 * Handle select and move
@@ -519,12 +553,35 @@ void showGraphEditorDemo() {
 	
 	ImGui::Begin("GraphEditor");
 	ImGui::DragInt("F", &F);
-	GraphEditor({ &animCurveX, &animCurveY }, &F);
+	GraphEditor("grapheditor", { &animCurveX, &animCurveY }, &F);
 	ImGui::End();
 }
 
+void showTimeSliderDemo() {
+	ImGui::Begin("TimeSliderDemo");
+	static int F, begin, end{100};
+	static bool play;
+	if (play)
+		F++;
+	ImGui::DragInt("F", &F);
+	ImGui::DragInt("begin", &begin);
+	ImGui::DragInt("end", &end);
+	ImGui::Checkbox("play", &play);
+	ImGui::Separator();
+	TimeSlider("timeslider", &F, &play, &begin, &end);
+	ImGui::End();
+}
+
+void addTrajectory(AnimCurve const & x, AnimCurve const & y, int from, int to) {
+	for (auto f = from; f < to; f++) {
+		glm::vec2 A = glm::vec2(x.getValueAtFrame(f), y.getValueAtFrame(f));
+		glm::vec2 B = glm::vec2(x.getValueAtFrame(f + 1), y.getValueAtFrame(f + 1));
+		addLineSegment(A, B, ImColor(128, 128, 128, 128));
+	}
+}
+
 void showAnimationDemo() {
-	// Model
+	/* Model */
 	static glm::vec2 P;
 	static int F{ 0 };
 	static int begin{ 0 };
@@ -540,6 +597,7 @@ void showAnimationDemo() {
 		});
 	animCurveX.color = ImColor(255, 0, 0);
 	animCurveX.label = "X";
+
 	static AnimCurve animCurveY({
 		Key(0,250),
 		Key(50,200),
@@ -550,13 +608,8 @@ void showAnimationDemo() {
 		});
 	animCurveY.color = ImColor(0, 255, 0);
 	animCurveY.label = "Y";
-	// viewer options
-	static int framesBefore{ 100 };
-	static int framesAfter{ 100 };
-	ImGui::DragInt("onionBefore", &framesBefore);
-	ImGui::DragInt("onionAfter", &framesAfter);
 
-	// Logic
+	/* Logic */
 	if (play) {
 		F++;
 		if (F > end)
@@ -565,171 +618,94 @@ void showAnimationDemo() {
 			F = end;
 	}
 
+	// set position of point from animatin curves
 	P = {
 		animCurveX.getValueAtFrame(F),
 		animCurveY.getValueAtFrame(F)
 	};
 
-	// GUI
+	/* GUI */
+
+	/* Canvas Viewer */
 	ImGui::Begin("Viewer");
-	{
-		Im2D::ViewerBegin("viewer");
-		if (Im2D::DragPoint("P", &P)) {
-			animCurveX.setValueAtFrame(P.x, F);
-			animCurveY.setValueAtFrame(P.y, F);
+	Im2D::ViewerBegin("viewer");
+	// set animCurves when dragging the point
+	if (Im2D::DragPoint("P", &P)) {
+		animCurveX.setValueAtFrame(P.x, F);
+		animCurveY.setValueAtFrame(P.y, F);
+	}
+
+	// draw trajectory
+	static int framesBefore{ 100 };
+	static int framesAfter{ 100 };
+	ImGui::DragInt("onionBefore", &framesBefore);
+	ImGui::DragInt("onionAfter", &framesAfter);
+	addTrajectory(animCurveX, animCurveY, F-framesBefore, F+framesAfter);
+
+	Im2D::ViewerEnd();
+	ImGui::End();
+
+	/* control time with a __TimeSlider__ */
+	ImGui::Begin("TimeSlider");
+	TimeSlider("TimeSlider", &F, &play, &begin, &end);
+	ImGui::End();
+
+	/* Show animCurves in the __GraphEditor__ */
+	ImGui::Begin("GraphEditor");
+	std::vector<AnimCurve*> curves{ &animCurveX, &animCurveY };
+
+	// Toolbar
+	if (ImGui::Button("Insert Key At current frame")) {
+		for (AnimCurve * animCurve : curves) {
+			animCurve->insertKeyAtFrame(F);
 		}
-
-		// draw trajectory
-		for (auto f = F - framesBefore; f < F + framesAfter; f++) {
-			glm::vec2 A = glm::vec2(animCurveX.getValueAtFrame(f), animCurveY.getValueAtFrame(f));
-			glm::vec2 B = glm::vec2(animCurveX.getValueAtFrame(f + 1), animCurveY.getValueAtFrame(f + 1));
-			addLineSegment(A, B, ImColor(128, 128, 128, 128));
-		}
-
-		Im2D::ViewerEnd();
-	}ImGui::End();
-
-	ImGui::Begin("Timeline");
-	{
-		// time slider
-		ImGui::PushItemWidth(50);
-		ImGui::DragInt("##begin", &begin);
-		if (begin >= end)
-			begin = end;
-		ImGui::SameLine();
-		ImGui::PushItemWidth(ImGui::GetWindowContentRegionWidth() - 2 * (ImGui::GetWindowContentRegionWidth() - ImGui::GetContentRegionAvailWidth()));
-		ImGui::SliderInt("##frame", &F, begin, end);
-		ImGui::SameLine();
-		ImGui::PushItemWidth(50);
-		ImGui::DragInt("##end", &end);
-		if (end <= begin)
-			end = begin;
-
-		// time controls
-		auto style = ImGui::GetStyle();
-		float btnWidth = 25;
-		ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth() / 2 - (btnWidth * 6 + 2 * style.ItemSpacing.x) / 2);
-		ImGui::BeginGroup();
-		if (ImGui::Button("|<<", ImVec2(btnWidth, 25)))
-			F = begin;
-		ImGui::SameLine();
-		if (ImGui::Button("|<", ImVec2(btnWidth, 25)))
-			F--;
-		ImGui::SameLine();
-		if (ImGui::Button("||", ImVec2(btnWidth, 25)))
-			play = false;
-		ImGui::SameLine();
-		if (ImGui::Button(">", ImVec2(btnWidth, 25)))
-			play = true;
-		ImGui::SameLine();
-		if (ImGui::Button(">|", ImVec2(btnWidth, 25)))
-			F++;
-		ImGui::SameLine();
-		if (ImGui::Button(">>|", ImVec2(btnWidth, 25)))
-			F = end;
-		ImGui::EndGroup();
-
-	}ImGui::End();
-
-	ImGui::Begin("DopeSheet");
-	{
-		if (ImGui::Button("Delete")) {
-			auto & keys = animCurveX.getKeys();
+	}
+	if (ImGui::Button("Delete Selected Keys")) {
+		for (AnimCurve * animCurve : curves) {
+			auto & keys = animCurve->getKeys();
 			for (int i = keys.size() - 1; i >= 0; i--) {
 				if (keys.at(i).selected) {
 					keys.erase(keys.begin() + i);
 				}
 			}
 		}
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-			ImGui::TextUnformatted("delete selected keys");
-			ImGui::PopTextWrapPos();
-			ImGui::EndTooltip();
-		}
-		for (auto i = 0; i < animCurveX.getKeys().size(); i++) {
-			auto & key = animCurveX.getKeys().at(i);
-			ImGui::SetCursorPosX(key.frame * 30);
-			ImGui::PushID(i);
-			if (ImGui::Selectable("K", key.selected, 0, ImVec2(30, 30))) {
-				key.selected = !key.selected;
-			}
-			ImGui::PopID();
-			ImGui::SameLine();
-		}
-		ImGui::NewLine();
+	}
 
-	}ImGui::End();
+	// Editor space
+	GraphEditor("GraphEditor", {&animCurveX, &animCurveY}, &F);
 
-	ImGui::Begin("Plot");
-	{
-		// convert keys to data;
-		std::vector<float> plotX(end + 1 - begin);
-		std::vector<float> plotY(end + 1 - begin);
-		for (auto f = begin; f < end + 1; f++) {
-			plotX[f - begin] = animCurveX.getValueAtFrame(f);
-			plotY[f - begin] = animCurveY.getValueAtFrame(f);
-		}
-		float scale_min = -600, scale_max = 600;
-		ImGui::PlotLines("x", plotX.data(), plotX.size(), 0, "posX", scale_min, scale_max, ImVec2(300, 150));
-		ImGui::PlotLines("y", plotY.data(), plotY.size(), 0, "posY", scale_min, scale_max, ImVec2(300, 150));
-	}ImGui::End();
-
-	ImGui::Begin("GraphEditor");
-	{
-
-		std::vector<AnimCurve*> curves{ &animCurveX, &animCurveY };
-
-		// Toolbar
-		if (ImGui::Button("Insert Key At current frame")) {
-			for (AnimCurve * animCurve : curves) {
-				animCurve->insertKeyAtFrame(F);
-			}
-		}
-		if (ImGui::Button("Delete Selected Keys")) {
-			for (AnimCurve * animCurve : curves) {
-				auto & keys = animCurve->getKeys();
-				for (int i = keys.size() - 1; i >= 0; i--) {
-					if (keys.at(i).selected) {
-						keys.erase(keys.begin() + i);
-					}
+	// Handle shortcuts
+	if (ImGui::IsWindowHovered())
+		if (ImGui::IsKeyPressed(83/*s*/))
+			for (auto animCurve : curves) {
+				if (animCurve->hasKeyAtFrame(F)) {
+					animCurve->removeKeyAtFrame(F);
+				}
+				else {
+					animCurve->insertKeyAtFrame(F);
 				}
 			}
-		}
-
-		// Editor space
-		GraphEditor({&animCurveX, &animCurveY}, &F);
-
-		// Handle shortcuts
-		if (ImGui::IsWindowHovered())
-			if (ImGui::IsKeyPressed(83/*s*/))
-				for (auto animCurve : curves) {
-					if (animCurve->hasKeyAtFrame(F)) {
-						animCurve->removeKeyAtFrame(F);
-					}
-					else {
-						animCurve->insertKeyAtFrame(F);
-					}
-				}
-
-		
-	}ImGui::End();
+	ImGui::End();
 }
 
 void showDemos() {
-	if (ImGui::Begin("ReadDemo")) {
-		showReadDemo();
-	}ImGui::End();
+	// show model demos
+	//if (ImGui::Begin("ReadDemo")) {
+	//	showReadDemo();
+	//}ImGui::End();
 
-	ImGui::SetNextWindowBgAlpha(0.0);
-	if (ImGui::Begin("CurveDemo")) {
-		showCurveDemo();
-	}ImGui::End();
+	//ImGui::SetNextWindowBgAlpha(0.0);
+	//if (ImGui::Begin("CurveDemo")) {
+	//	showCurveDemo();
+	//}ImGui::End();
 
-	ImGui::SetNextWindowBgAlpha(0.0);
-	if (ImGui::Begin("PathDemo")) {
-		showPathDemo();
-	}ImGui::End();
+	//ImGui::SetNextWindowBgAlpha(0.0);
+	//if (ImGui::Begin("PathDemo")) {
+	//	showPathDemo();
+	//}ImGui::End();
+
+	//show widgets demos
+	//showTimeSliderDemo();
+	//showGraphEditorDemo();
+	showAnimationDemo();
 }

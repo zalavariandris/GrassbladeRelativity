@@ -87,26 +87,25 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, 
 		changed = true;
 	}
 
-	// handle scale with mouse wheel
+	// handle zoom with mouse wheel
 	if (io.MouseWheel != 0 && ImGui::IsItemHovered(ImGuiHoveredFlags_None)) {
 		zoom *= 1 + io.MouseWheel*0.1;
 		changed = true;
 	}
 
-	// handle nonuniform scale with middlemouse+alt
-
-		if (ImGui::IsItemActive() && // item is active
-			((ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt) || // MMB and ALT
-			(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && ImGui::GetIO().KeyCtrl))) { //LMB + CTRL+ALT
-			glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
-			float h = io.MouseDelta.x * 1; // horizontal
-			float v = io.MouseDelta.y * -1; // vertical
-			if (!IndependentZoom) {
-				h = v = (h + v) / 2;
-			}
-			zoom *= glm::vec2(1 + h * 0.01, 1 + v * 0.01);
-			changed = true;
+	// handle zoom with MMB+alt
+	if (ImGui::IsItemActive() && // item is active
+		((ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt) || // MMB and ALT
+		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && ImGui::GetIO().KeyCtrl))) { //LMB + CTRL+ALT
+		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
+		float h = io.MouseDelta.x * 1; // horizontal
+		float v = io.MouseDelta.y * -1; // vertical
+		if (!IndependentZoom) {
+			h = v = (h + v) / 2;
 		}
+		zoom *= glm::vec2(1 + h * 0.01, 1 + v * 0.01);
+		changed = true;
+	}
 
 	 
 	if (changed) {
