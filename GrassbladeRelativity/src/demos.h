@@ -465,7 +465,7 @@ void showAnimationDemo() {
 	ImGui::Begin("GraphEditor");
 	{
 		
-		std::vector<AnimCurve*> curves;
+		std::vector<AnimCurve*> curves{ &animCurveX, &animCurveY };
 		if (ImGui::Button("Insert Key At current frame")) {
 			for (AnimCurve * animCurve : curves) {
 				animCurve->insertKeyAtFrame(F);
@@ -604,13 +604,8 @@ void showAnimationDemo() {
 		auto top = fromScreen({ 0, ImGui::GetWindowPos().y }).y;
 		auto bottom = fromScreen({ 0, ImGui::GetWindowPos().y + ImGui::GetWindowHeight() }).y;
 		addLineSegment({ F, top }, { F, bottom }, ImColor(255, 255, 0, 128));
-
-		ImVec2 mousePos = ImGui::GetMousePos();
-		auto P = fromScreen(glm::vec2(mousePos.x, mousePos.y));
-		ImGui::SetCursorScreenPos({ mousePos.x, mousePos.y-ImGui::GetFontSize()});
-		ImGui::Text("mouse(%f, %f) -> P(%f, %f)",mousePos.x, mousePos.y ,(float)P.x, (float)P.y) ;
 		
-
+		// add timeslider at top
 		int windowLeft = ImGui::GetWindowPos().x;
 		int windowRight = ImGui::GetWindowPos().x + ImGui::GetWindowWidth();
 		ImGui::SetCursorPos(ImVec2(0, 0));

@@ -65,7 +65,7 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, 
 	bool changed{ false };
 	ImGui::InvisibleButton(str_id, size);
 	ImGui::SetItemAllowOverlap();
-	ImGuiIO io = ImGui::GetIO();
+	auto io = ImGui::GetIO();
 
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_None) && ImGui::IsMouseDown(2)) {
 		ImGui::ActivateItem(ImGui::GetItemID());
