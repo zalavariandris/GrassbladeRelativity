@@ -209,6 +209,7 @@ private:
 
 public:
 	ImColor color{ 255,255,255,128 };
+	std::string label{ "" };
 	AnimCurve() {};
 	AnimCurve(std::vector<Key> keys) {
 		setKeys(keys);
@@ -307,7 +308,220 @@ public:
 	}
 };
 
+void GraphEditor(std::vector<AnimCurve*> curves, int * F) {
+	// start viewer
+	Im2D::ViewerBegin("grapheditor", ImVec2(), Im2DViewportFlags_Grid | Im2DViewportFlags_AllowNonUniformZoom);
 
+	/*
+	 * Handle select and move
+	 */
+	enum Action {
+		ACTION_IDLE,
+		ACTION_SELECTING,
+		ACTION_MOVING
+	};
+
+	// get a single key at specified coordinates
+	auto getKeyAtCoords = [&](glm::vec2 coords, double tolerance = 5)->Key* {
+		for (AnimCurve * curve : curves) {
+			for (auto &key : curve->getKeys()) {
+				auto P = toScreen({ key.frame, key.value });
+				if (Rect(coords - glm::vec2(tolerance), coords + glm::vec2(tolerance)).contains(P)) {
+					return &key;
+				}
+			}
+		}
+		return nullptr;
+	};
+
+	// get all keys inside a rect
+	auto getKeysInRect = [&](Rect rect, double tolerance = 5)->std::vector<Key*> {
+		std::vector<Key*> keysInRect;
+		for (AnimCurve * curve : curves) {
+			for (auto &key : curve->getKeys()) {
+				auto P = toScreen({ key.frame, key.value });
+				if (rect.contains(P)) {
+					keysInRect.push_back(&key);
+				}
+			}
+		}
+		return keysInRect;
+	};
+
+	static Action action = ACTION_IDLE;
+	static glm::vec2 selectionFrom;
+	static glm::vec2 selectionTo;
+	bool AnyModifierKey = ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyAlt || ImGui::GetIO().KeyShift;
+	if (action==ACTION_IDLE && ImGui::IsItemClicked(0) && !AnyModifierKey) {
+		// get keys under mouse
+		auto mouseScreenPos = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+		Key * keyHit = getKeyAtCoords(mouseScreenPos);
+		bool anyKeyHit = keyHit==nullptr ? false : true;
+
+		//
+		if (anyKeyHit) {
+			if (keyHit->selected) {
+				// start moving selected keys
+				action = ACTION_MOVING;
+			} else {
+				//deselect all keys
+				for (AnimCurve * curve : curves)
+					for (auto & key : curve->getKeys())
+						key.selected = false;
+
+				keyHit->selected = true;
+				action = ACTION_MOVING;
+			}
+			
+		} else {
+			//deselect all keys
+			for (AnimCurve * curve : curves)
+				for (auto & key : curve->getKeys())
+					key.selected = false;
+
+			// start rect selection
+			action = ACTION_SELECTING;
+			selectionFrom.x = ImGui::GetMousePos().x;
+			selectionFrom.y = ImGui::GetMousePos().y;
+			selectionTo.x = selectionFrom.x;
+			selectionTo.y = selectionFrom.y;
+		}
+	}
+
+	if (action==ACTION_SELECTING && ImGui::IsItemActive() && ImGui::IsMouseDragging(0) && !AnyModifierKey) {
+		// extend rect selection
+		selectionTo.x = ImGui::GetMousePos().x;
+		selectionTo.y = ImGui::GetMousePos().y;
+
+		// select keys in rectangle
+		Rect selectionRect(selectionFrom, selectionTo);
+		for (AnimCurve * curve : curves) {
+			for (auto &key : curve->getKeys()) {
+				auto P = toScreen({ key.frame, key.value });
+				if (selectionRect.contains(P)) {
+					key.selected = true;
+				}
+				else {
+					key.selected = false;
+				}
+			}
+		}
+	}
+
+	if (action==ACTION_MOVING && ImGui::IsItemActive() && ImGui::IsMouseDragging(0) && !AnyModifierKey) {
+		// move keys with drag
+		glm::vec2 delta = Im2D::GetMouseDelta();
+		for (AnimCurve * curve : curves) {
+			for (auto & key : curve->getKeys()) {
+				if (key.selected) {
+					key.frame += delta.x;
+					key.value += delta.y;
+				}
+			}
+		}
+	}
+	if (ImGui::IsItemDeactivated()) {
+		action=ACTION_IDLE;
+	}
+
+	// draw animation curves
+	for (AnimCurve * animCurve : curves) {
+		auto & keys = animCurve->getKeys();
+		for (auto i = 0; i < keys.size() - 1; i++) {
+			Key keyA = keys.at(i);
+			Key keyB = keys.at(i + 1);
+
+			// draw x curve
+			glm::vec2 posAx = glm::vec2(keyA.frame, keyA.value);
+			glm::vec2 posBx = glm::vec2(keyB.frame, keyB.value);
+			addLineSegment(posAx, posBx, animCurve->color);
+		}
+	}
+
+	// draw animation keys
+	for (AnimCurve * animCurve : curves) {
+		auto keys = animCurve->getKeys();
+		for (auto key : keys) {
+			addRect(glm::vec2(key.frame, key.value), 5, 5, key.selected ? ImColor(255,255,255) : ImColor(128,128,128),2.0);
+		}
+	}
+
+	// draw animCurve labels
+	auto window = ImGui::GetCurrentWindow();
+	for (AnimCurve * animCurve : curves) {
+		float screenLeft = ImGui::GetWindowPos().x + ImGui::GetStyle().ItemSpacing.x;
+		float viewLeft = fromScreen({ screenLeft,0 }).x;
+		ImVec2 labelPos;
+		auto firstKey = animCurve->getKeys().at(0);
+		if (viewLeft > firstKey.frame) {
+			float valueAtLeft = animCurve->getValueAtFrame(viewLeft);
+			float screenValue = toScreen({ 0, valueAtLeft }).y;
+			labelPos = ImVec2(
+				screenLeft,
+				screenValue
+			);
+		} else {
+			auto screenPos = toScreen({ firstKey.frame, firstKey.value });
+			labelPos = ImVec2(screenPos.x, screenPos.y);
+		}
+		labelPos.y -= ImGui::GetFontSize();
+
+		window->DrawList->AddText(labelPos, animCurve->color, animCurve->label.c_str());
+	}
+
+	// draw current time
+	auto top = fromScreen({ 0, ImGui::GetWindowPos().y }).y;
+	auto bottom = fromScreen({ 0, ImGui::GetWindowPos().y + ImGui::GetWindowHeight() }).y;
+	addLineSegment({ *F, top }, { *F, bottom }, ImColor(255, 255, 0, 128));
+
+	//draw selection rectangle
+	if (action==ACTION_SELECTING) {
+		Rect selectionRect(selectionFrom, selectionTo);
+		auto window = ImGui::GetCurrentWindow();
+		window->DrawList->AddRectFilled(
+			ImVec2(selectionRect.left(), selectionRect.top()),
+			ImVec2(selectionRect.right(), selectionRect.bottom()),
+			ImColor(255, 255, 255, 25)
+		);
+		window->DrawList->AddRect(
+			ImVec2(selectionRect.left(), selectionRect.top()),
+			ImVec2(selectionRect.right(), selectionRect.bottom()),
+			ImColor(255, 255, 255, 200)
+		);
+	}
+
+	Im2D::ViewerEnd();
+}
+
+void showGraphEditorDemo() {
+	static AnimCurve animCurveX({
+		Key(0,0),
+		Key(50,50),
+		Key(100,100),
+		Key(150,150),
+		Key(200,200),
+		Key(250,250)
+	});
+	animCurveX.color = ImColor(255, 0, 0);
+	animCurveX.label = "x";
+
+	static AnimCurve animCurveY({
+		Key(0,250),
+		Key(50,200),
+		Key(100,50),
+		Key(150,100),
+		Key(200,50),
+		Key(250,50)
+		});
+	animCurveY.color = ImColor(0, 255, 0);
+	animCurveY.label = "y";
+	static int F{ 0 };
+	
+	ImGui::Begin("GraphEditor");
+	ImGui::DragInt("F", &F);
+	GraphEditor({ &animCurveX, &animCurveY }, &F);
+	ImGui::End();
+}
 
 void showAnimationDemo() {
 	// Model
@@ -323,8 +537,9 @@ void showAnimationDemo() {
 		Key(150,150),
 		Key(200,200),
 		Key(250,250)
-	});
+		});
 	animCurveX.color = ImColor(255, 0, 0);
+	animCurveX.label = "X";
 	static AnimCurve animCurveY({
 		Key(0,250),
 		Key(50,200),
@@ -332,9 +547,9 @@ void showAnimationDemo() {
 		Key(150,100),
 		Key(200,50),
 		Key(250,50)
-	});
+		});
 	animCurveY.color = ImColor(0, 255, 0);
-
+	animCurveY.label = "Y";
 	// viewer options
 	static int framesBefore{ 100 };
 	static int framesAfter{ 100 };
@@ -365,9 +580,9 @@ void showAnimationDemo() {
 		}
 
 		// draw trajectory
-		for (auto f = F-framesBefore; f < F+framesAfter; f++) {
+		for (auto f = F - framesBefore; f < F + framesAfter; f++) {
 			glm::vec2 A = glm::vec2(animCurveX.getValueAtFrame(f), animCurveY.getValueAtFrame(f));
-			glm::vec2 B = glm::vec2(animCurveX.getValueAtFrame(f+1), animCurveY.getValueAtFrame(f+1));
+			glm::vec2 B = glm::vec2(animCurveX.getValueAtFrame(f + 1), animCurveY.getValueAtFrame(f + 1));
 			addLineSegment(A, B, ImColor(128, 128, 128, 128));
 		}
 
@@ -393,7 +608,7 @@ void showAnimationDemo() {
 		// time controls
 		auto style = ImGui::GetStyle();
 		float btnWidth = 25;
-		ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth()/2-(btnWidth *6+2*style.ItemSpacing.x)/2);
+		ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth() / 2 - (btnWidth * 6 + 2 * style.ItemSpacing.x) / 2);
 		ImGui::BeginGroup();
 		if (ImGui::Button("|<<", ImVec2(btnWidth, 25)))
 			F = begin;
@@ -404,7 +619,7 @@ void showAnimationDemo() {
 		if (ImGui::Button("||", ImVec2(btnWidth, 25)))
 			play = false;
 		ImGui::SameLine();
-		if (ImGui::Button(">", ImVec2(btnWidth,25)))
+		if (ImGui::Button(">", ImVec2(btnWidth, 25)))
 			play = true;
 		ImGui::SameLine();
 		if (ImGui::Button(">|", ImVec2(btnWidth, 25)))
@@ -436,7 +651,7 @@ void showAnimationDemo() {
 		}
 		for (auto i = 0; i < animCurveX.getKeys().size(); i++) {
 			auto & key = animCurveX.getKeys().at(i);
-			ImGui::SetCursorPosX(key.frame*30);
+			ImGui::SetCursorPosX(key.frame * 30);
 			ImGui::PushID(i);
 			if (ImGui::Selectable("K", key.selected, 0, ImVec2(30, 30))) {
 				key.selected = !key.selected;
@@ -447,15 +662,15 @@ void showAnimationDemo() {
 		ImGui::NewLine();
 
 	}ImGui::End();
-	
-	ImGui::Begin("Plot"); 
+
+	ImGui::Begin("Plot");
 	{
 		// convert keys to data;
-		std::vector<float> plotX(end+1 - begin);
-		std::vector<float> plotY(end+1- begin);
-		for (auto f = begin; f < end+1; f++) {
-			plotX[f-begin] = animCurveX.getValueAtFrame(f);
-			plotY[f-begin] = animCurveY.getValueAtFrame(f);
+		std::vector<float> plotX(end + 1 - begin);
+		std::vector<float> plotY(end + 1 - begin);
+		for (auto f = begin; f < end + 1; f++) {
+			plotX[f - begin] = animCurveX.getValueAtFrame(f);
+			plotY[f - begin] = animCurveY.getValueAtFrame(f);
 		}
 		float scale_min = -600, scale_max = 600;
 		ImGui::PlotLines("x", plotX.data(), plotX.size(), 0, "posX", scale_min, scale_max, ImVec2(300, 150));
@@ -464,8 +679,10 @@ void showAnimationDemo() {
 
 	ImGui::Begin("GraphEditor");
 	{
-		
+
 		std::vector<AnimCurve*> curves{ &animCurveX, &animCurveY };
+
+		// Toolbar
 		if (ImGui::Button("Insert Key At current frame")) {
 			for (AnimCurve * animCurve : curves) {
 				animCurve->insertKeyAtFrame(F);
@@ -481,114 +698,11 @@ void showAnimationDemo() {
 				}
 			}
 		}
-		Im2D::ViewerBegin("viewport", ImVec2(), Im2DViewportFlags_Grid | Im2DViewportFlags_AllowNonUniformZoom);
 
-		// Handle selection
-		static bool isSelecting{ false };
-		static glm::vec2 selectionFrom;
-		static glm::vec2 selectionTo;
-		if (ImGui::IsItemActivated() && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl) {
-			isSelecting = true;
-			selectionFrom.x = ImGui::GetMousePos().x;
-			selectionFrom.y = ImGui::GetMousePos().y;
-			selectionTo.x = selectionFrom.x;
-			selectionTo.y = selectionFrom.y;
-		}
-		if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0) && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl) {
-			selectionTo.x = ImGui::GetMousePos().x;
-			selectionTo.y = ImGui::GetMousePos().y;
-		}
-		if (ImGui::IsItemDeactivated()) {
-			isSelecting = false;
-		}
+		// Editor space
+		GraphEditor({&animCurveX, &animCurveY}, &F);
 
-		if (isSelecting) {
-			// select keys
-			Rect selectionRect(selectionFrom, selectionTo);
-			for (AnimCurve * animCurve : curves) {
-				for (auto & key : animCurve->getKeys()) {
-					glm::vec2 P = toScreen({ key.frame, key.value });
-					if (selectionRect.contains(P)) {
-						key.selected = true;
-					}
-					else {
-						key.selected = false;
-					}
-				}
-			}
-
-			// draw selection rect
-			auto window = ImGui::GetCurrentWindow();
-			window->DrawList->AddRectFilled(
-				ImVec2(selectionRect.left(), selectionRect.top()),
-				ImVec2(selectionRect.right(), selectionRect.bottom()),
-				ImColor(255, 255, 255, 25)
-			);
-			window->DrawList->AddRect(
-				ImVec2(selectionRect.left(), selectionRect.top()),
-				ImVec2(selectionRect.right(), selectionRect.bottom()),
-				ImColor(255, 255, 255, 200)
-			);
-		}
-
-		// draw anim curves
-		for (AnimCurve * animCurve : curves) {
-			auto & keys = animCurve->getKeys();
-			for (auto i = 0; i < keys.size() - 1; i++) {
-				Key keyA = keys.at(i);
-				Key keyB = keys.at(i + 1);
-
-				// draw x curve
-				glm::vec2 posAx = glm::vec2(keyA.frame, keyA.value);
-				glm::vec2 posBx = glm::vec2(keyB.frame, keyB.value);
-				addLineSegment(posAx, posBx, animCurve->color);
-			}
-		}
-
-		// modify keys
-		bool anySelectedPointDragging{ false };
-		for (AnimCurve * animCurve : curves) {
-			auto & keys = animCurve->getKeys();
-			for (auto & key : keys) {
-				ImGui::PushID(&key);
-				glm::vec2 C = glm::vec2(key.frame, key.value);
-
-				ImGui::PushStyleColor(ImGuiCol_Button,
-					key.selected ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 0.5, 0.5)
-				);
-
-				if (Im2D::Button("##C", C, glm::vec2(16.0))) {
-					key.selected = !key.selected;
-					cout << "clicked" << " selected: " << key.selected << endl;
-					cout << "       active: " << ImGui::IsItemActive() << endl;
-				}
-
-				if (key.selected && ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
-					anySelectedPointDragging = true;
-
-				ImGui::PopStyleColor();
-
-				ImGui::PopID();
-			}
-		}
-
-		if (anySelectedPointDragging) {
-			for (AnimCurve * animCurve : curves) {
-				auto & keys = animCurve->getKeys();
-				for (auto & key : keys) {
-					if (key.selected) {
-						key.frame += Im2D::GetMouseDelta().x;
-						key.value += Im2D::GetMouseDelta().y;
-					}
-				}
-			}
-		}
-
-		// handle shortcuts
-		//for (auto i = 0; i < 512; i++)
-		//	if (io.KeysDown[i])
-		//		cout << i << endl;
-
+		// Handle shortcuts
 		if (ImGui::IsWindowHovered())
 			if (ImGui::IsKeyPressed(83/*s*/))
 				for (auto animCurve : curves) {
@@ -600,20 +714,7 @@ void showAnimationDemo() {
 					}
 				}
 
-		// draw current time horizontal line
-		auto top = fromScreen({ 0, ImGui::GetWindowPos().y }).y;
-		auto bottom = fromScreen({ 0, ImGui::GetWindowPos().y + ImGui::GetWindowHeight() }).y;
-		addLineSegment({ F, top }, { F, bottom }, ImColor(255, 255, 0, 128));
 		
-		// add timeslider at top
-		int windowLeft = ImGui::GetWindowPos().x;
-		int windowRight = ImGui::GetWindowPos().x + ImGui::GetWindowWidth();
-		ImGui::SetCursorPos(ImVec2(0, 0));
-		ImGui::PushItemWidth(ImGui::GetWindowWidth());
-		ImGui::SliderInt("graphtime", &F, fromScreen({ windowLeft, 0 }).x, fromScreen({ windowRight, 0 }).x);
-		ImGui::PopItemWidth();
-
-		Im2D::ViewerEnd();
 	}ImGui::End();
 }
 

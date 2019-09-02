@@ -31,7 +31,21 @@ void addLineSegment(const glm::vec2 & A, const glm::vec2 & B, ImColor color, flo
 	window->DrawList->AddLine(ImVec2(A1.x, A1.y), ImVec2(B1.x, B1.y), color, thickness);
 }
 
-void addText(glm::vec2 P, char * fmt, ...) {
+void addRect(glm::vec2 center, double width, double height, ImColor color, float thickness) {
+	ImGuiWindow * window = ImGui::GetCurrentWindow();
+	glm::vec2 P = toScreen(center);
+
+	window->DrawList->AddRect(
+		ImVec2(P.x - width / 2, P.y - height / 2),
+		ImVec2(P.x + height / 2, P.y + height / 2), 
+		color, 
+		0.0,
+		15,
+		thickness
+	);
+}
+
+void addText(glm::vec2 P, const char * fmt, ...) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	char buffer[256];
 	va_list args;
