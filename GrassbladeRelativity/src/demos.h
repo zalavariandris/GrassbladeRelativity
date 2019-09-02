@@ -9,7 +9,8 @@
 /* utilities */
 namespace {
 	void syncCameraToViewport(ofCamera & camera) {
-		float zoom = Im2D::getZoom();
+		// TODO: support non ufiform zoom
+		float zoom = Im2D::getZoom().x;
 		glm::vec2 pan = Im2D::getPan();
 		glm::vec2 windowPos{ ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
 		glm::vec2 windowSize = { ImGui::GetWindowWidth(), ImGui::GetWindowHeight() };
@@ -186,177 +187,190 @@ void showReadDemo() {
 }
 
 // GraphEditor demo
-namespace {
-	double lerp(double a, double b, double t) {
-		return a + t * (b - a);
+double lerp(double a, double b, double t) {
+	return a + t * (b - a);
+};
+
+glm::vec2 lerp(glm::vec2 A, glm::vec2 B, double t) {
+	return glm::vec2(lerp(A.x, B.x, t), lerp(A.y, B.y, t));
+}
+
+struct Key {
+	bool selected{ false };
+	int frame;
+	double value;
+	Key(int frame, double value) :frame(frame), value(value) {};
+};
+
+class AnimCurve{
+private:
+	vector<Key> _keys;
+		
+
+public:
+	ImColor color{ 255,255,255,128 };
+	AnimCurve() {};
+	AnimCurve(std::vector<Key> keys) {
+		setKeys(keys);
 	};
 
-	glm::vec2 lerp(glm::vec2 A, glm::vec2 B, double t) {
-		return glm::vec2(lerp(A.x, B.x, t), lerp(A.y, B.y, t));
+	void setKeys(std::vector<Key> keys) {
+		_keys = keys;
+		std::sort(_keys.begin(), _keys.end(), [](auto A, auto B) {
+			return A.frame < B.frame;
+		});
 	}
 
-	struct Key {
-		bool selected{ false };
-		double frame;
-		glm::vec2 pos;
-		Key(double frame, glm::vec2 pos) :frame(frame), pos(pos) {};
-	};
+	double getValueAtFrame(double frame) const{
+		if (_keys.empty())
+			return 0.0;
 
-	class AnimationCurve{
-	private:
-		vector<Key> _keys;
+		if (frame <= _keys[0].frame)
+			return _keys[0].value;
 
-	public:
-		bool selected{ false };
-		AnimationCurve() {};
-		AnimationCurve(std::vector<Key> keys) {
-			setKeys(keys);
-		};
+		if (frame >= _keys[_keys.size() - 1].frame)
+			return _keys[_keys.size() - 1].value;
 
-		void setKeys(std::vector<Key> keys) {
-			_keys = keys;
-			std::sort(_keys.begin(), _keys.end(), [](auto A, auto B) {
-				return A.frame < B.frame;
-			});
+		// find embace keys
+		double i1 = 0;
+		while (_keys[i1].frame <= frame)
+			i1++;
+		int i0 = i1 - 1;
+
+		// extract values fro lerp
+		double v0 = _keys[i0].value;
+		double v1 = _keys[i1].value;
+		int f0 = _keys[i0].frame;
+		int f1 = _keys[i1].frame;
+		double t = (frame - f0) / (f1 - f0);
+
+		return lerp(v0, v1, t);
+	}
+
+	void insertKeyAtFrame(int frame) {
+		double val = getValueAtFrame(frame);
+		setValueAtFrame(val, frame);
+	}
+
+	void setValueAtFrame(double value, int frame) {
+		if (_keys.empty())
+			_keys.push_back(Key(frame, value));
+
+		if (frame < _keys[0].frame)
+			_keys.insert(_keys.begin(), 1, Key(frame, value));
+
+		if (frame > _keys[_keys.size() - 1].frame)
+			_keys.push_back(Key(frame, value));
+
+		// find key at frame
+		auto i = -1;
+		for (int i=0; i < _keys.size(); i++)
+			if (getKeys()[i].frame == frame) {
+				_keys[i].value = value;
+				return;
+			}
+
+		// find embace keys
+		int i1 = 0;
+		while (_keys[i1].frame <= frame)
+			i1++;
+		int i0 = i1 - 1;
+
+		_keys.insert(_keys.begin() + i1, 1, Key(frame, value));
+	}
+
+	int getKeyIndexAtFrame(double frame) {
+		for (int i = 0; i < _keys.size(); i++){
+			if (getKeys()[i].frame == frame) {
+				return i;
+			}
 		}
+		return -1;
+	}
 
-		glm::vec2 getValueAtFrame(double frame) const{
-			if (_keys.empty())
-				return glm::vec2();
+	bool hasKeyAtFrame(double frame) {
+		return getKeyIndexAtFrame(frame) >= 0;
+	}
 
-			if (frame <= _keys[0].frame)
-				return _keys[0].pos;
+	bool removeKeyAtFrame(double frame) {
+		auto idx = getKeyIndexAtFrame(frame);
+		if (idx < 0)
+			return false;
 
-			if (frame >= _keys[_keys.size() - 1].frame)
-				return _keys[_keys.size() - 1].pos;
+		auto & keys = getKeys();
+		keys.erase(keys.begin()+idx);
+		return true;
+	}
 
-			// find embace keys
-			double i1 = 0;
-			while (_keys[i1].frame <= frame)
-				i1++;
-			int i0 = i1 - 1;
+	std::vector<Key> & getKeys(){
+		return _keys;
+	}
+};
 
-			// extract values fro lerp
-			glm::vec2 p0 = _keys[i0].pos;
-			glm::vec2 p1 = _keys[i1].pos;
-			double f0 = _keys[i0].frame;
-			double f1 = _keys[i1].frame;
-			double t = (frame - f0) / (f1 - f0);
 
-			return lerp(p0, p1, t);
-		}
-
-		void setValueAtFrame(glm::vec2 value, double frame) {
-			if (_keys.empty())
-				_keys.push_back(Key(frame, value));
-
-			if (frame < _keys[0].frame)
-				_keys.insert(_keys.begin(), 1, Key(frame, value));
-
-			if (frame > _keys[_keys.size() - 1].frame)
-				_keys.push_back(Key(frame, value));
-
-			// find key by frame
-			auto i = -1;
-			for (int i=0; i < _keys.size(); i++)
-				if (getKeys()[i].frame == frame) {
-					_keys[i].pos = value;
-					return;
-				}
-
-			// find embace keys
-			double i1 = 0;
-			while (_keys[i1].frame <= frame)
-				i1++;
-			int i0 = i1 - 1;
-
-			_keys.insert(_keys.begin() + i0, 1, Key(frame, value));
-		}
-
-		std::vector<Key> & getKeys(){
-			return _keys;
-		}
-	};
-}
-
-void showGraphEditorDemo() {
-	ImGui::Begin("GraphEditorDemo");
-	static int F{ 0 };
-	ImGui::SliderInt("frame", &F, -10, 110);
-
-	AnimationCurve animCurve({
-		Key(0,{0,600}),
-		Key(5,{50,500}),
-		Key(10,{100,100}),
-		Key(15,{150,300}),
-		Key(20,{200,100}),
-		Key(25,{250,100})
-	});
-
-	//ImGui::PlotLines("X", [](void*data, int idx) {
-	//	AnimationCurve animCurve({
-	//		Key(0,{0,600}),
-	//		Key(5,{50,500}),
-	//		Key(10,{100,100}),
-	//		Key(15,{150,300}),
-	//		Key(20,{200,100}),
-	//		Key(25,{250,100})
-	//	});
-	//	return animCurve.getValueAtFrame(idx).x;
-	//}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
-
-	//ImGui::PlotLines("Y", [](void*data, int idx) {
-	//	AnimationCurve animCurve({
-	//		Key(0,{0,600}),
-	//		Key(5,{50,500}),
-	//		Key(10,{100,100}),
-	//		Key(15,{150,300}),
-	//		Key(20,{200,100}),
-	//		Key(25,{250,100})
-	//	});
-	//	return animCurve.getValueAtFrame(idx).x;
-	//}, NULL, 100, 0, "", 0, 600, ImVec2(300, 150));
-	ImGui::End();
-
-	
-	glm::vec2 pos = animCurve.getValueAtFrame(F);
-	pos.y = ofGetHeight() - pos.y;
-	ofDrawCircle(pos, 50);
-}
 
 void showAnimationDemo() {
 	// Model
 	static glm::vec2 P;
 	static int F{ 0 };
 	static int begin{ 0 };
-	static int end{ 50 };
+	static int end{ 500 };
 	static bool play{ false };
-	static AnimationCurve animCurve({
-		Key(0,{0,250}),
-		Key(5,{50,200}),
-		Key(10,{100,50}),
-		Key(15,{150,100}),
-		Key(20,{200,50}),
-		Key(25,{250,50})
+	static AnimCurve animCurveX({
+		Key(0,0),
+		Key(50,50),
+		Key(100,100),
+		Key(150,150),
+		Key(200,200),
+		Key(250,250)
 	});
+	animCurveX.color = ImColor(255, 0, 0);
+	static AnimCurve animCurveY({
+		Key(0,250),
+		Key(50,200),
+		Key(100,50),
+		Key(150,100),
+		Key(200,50),
+		Key(250,50)
+	});
+	animCurveY.color = ImColor(0, 255, 0);
+
+	// viewer options
+	static int framesBefore{ 100 };
+	static int framesAfter{ 100 };
+	ImGui::DragInt("onionBefore", &framesBefore);
+	ImGui::DragInt("onionAfter", &framesAfter);
 
 	// Logic
-	if (play)
+	if (play) {
 		F++;
-	if (F > end)
-		F = begin;
-	if (F < begin)
-		F = end;
+		if (F > end)
+			F = begin;
+		if (F < begin)
+			F = end;
+	}
 
-	P = animCurve.getValueAtFrame(F);
+	P = {
+		animCurveX.getValueAtFrame(F),
+		animCurveY.getValueAtFrame(F)
+	};
 
 	// GUI
 	ImGui::Begin("Viewer");
 	{
 		Im2D::ViewerBegin("viewer");
 		if (Im2D::DragPoint("P", &P)) {
-			animCurve.setValueAtFrame(P, F);
+			animCurveX.setValueAtFrame(P.x, F);
+			animCurveY.setValueAtFrame(P.y, F);
 		}
+
+		// draw trajectory
+		for (auto f = F-framesBefore; f < F+framesAfter; f++) {
+			glm::vec2 A = glm::vec2(animCurveX.getValueAtFrame(f), animCurveY.getValueAtFrame(f));
+			glm::vec2 B = glm::vec2(animCurveX.getValueAtFrame(f+1), animCurveY.getValueAtFrame(f+1));
+			addLineSegment(A, B, ImColor(128, 128, 128, 128));
+		}
+
 		Im2D::ViewerEnd();
 	}ImGui::End();
 
@@ -381,22 +395,22 @@ void showAnimationDemo() {
 		float btnWidth = 25;
 		ImGui::SetCursorPosX(ImGui::GetContentRegionAvailWidth()/2-(btnWidth *6+2*style.ItemSpacing.x)/2);
 		ImGui::BeginGroup();
-		if (ImGui::Button("|<<", ImVec2(btnWidth, 20)))
+		if (ImGui::Button("|<<", ImVec2(btnWidth, 25)))
 			F = begin;
 		ImGui::SameLine();
-		if (ImGui::Button("|<", ImVec2(btnWidth, 20)))
+		if (ImGui::Button("|<", ImVec2(btnWidth, 25)))
 			F--;
 		ImGui::SameLine();
-		if (ImGui::Button("||", ImVec2(btnWidth, 20)))
+		if (ImGui::Button("||", ImVec2(btnWidth, 25)))
 			play = false;
 		ImGui::SameLine();
-		if (ImGui::Button(">", ImVec2(btnWidth,20)))
+		if (ImGui::Button(">", ImVec2(btnWidth,25)))
 			play = true;
 		ImGui::SameLine();
-		if (ImGui::Button(">|", ImVec2(btnWidth, 20)))
+		if (ImGui::Button(">|", ImVec2(btnWidth, 25)))
 			F++;
 		ImGui::SameLine();
-		if (ImGui::Button(">>|", ImVec2(btnWidth, 20)))
+		if (ImGui::Button(">>|", ImVec2(btnWidth, 25)))
 			F = end;
 		ImGui::EndGroup();
 
@@ -405,14 +419,12 @@ void showAnimationDemo() {
 	ImGui::Begin("DopeSheet");
 	{
 		if (ImGui::Button("Delete")) {
-			auto & keys = animCurve.getKeys();
+			auto & keys = animCurveX.getKeys();
 			for (int i = keys.size() - 1; i >= 0; i--) {
 				if (keys.at(i).selected) {
-					cout << "erease key at: " << i << endl;
 					keys.erase(keys.begin() + i);
 				}
 			}
-			// collect indices
 		}
 		if (ImGui::IsItemHovered())
 		{
@@ -422,8 +434,8 @@ void showAnimationDemo() {
 			ImGui::PopTextWrapPos();
 			ImGui::EndTooltip();
 		}
-		for (auto i = 0; i < animCurve.getKeys().size(); i++) {
-			auto & key = animCurve.getKeys().at(i);
+		for (auto i = 0; i < animCurveX.getKeys().size(); i++) {
+			auto & key = animCurveX.getKeys().at(i);
 			ImGui::SetCursorPosX(key.frame*30);
 			ImGui::PushID(i);
 			if (ImGui::Selectable("K", key.selected, 0, ImVec2(30, 30))) {
@@ -442,9 +454,8 @@ void showAnimationDemo() {
 		std::vector<float> plotX(end+1 - begin);
 		std::vector<float> plotY(end+1- begin);
 		for (auto f = begin; f < end+1; f++) {
-			auto pos = animCurve.getValueAtFrame(f);
-			plotX[f-begin] = pos.x;
-			plotY[f-begin] = pos.y;
+			plotX[f-begin] = animCurveX.getValueAtFrame(f);
+			plotY[f-begin] = animCurveY.getValueAtFrame(f);
 		}
 		float scale_min = -600, scale_max = 600;
 		ImGui::PlotLines("x", plotX.data(), plotX.size(), 0, "posX", scale_min, scale_max, ImVec2(300, 150));
@@ -453,41 +464,160 @@ void showAnimationDemo() {
 
 	ImGui::Begin("GraphEditor");
 	{
-		Im2D::ViewerBegin("viewport", ImVec2(), Im2DViewportFlags_AllowNonUniformZoom);
-		// draw anim curve
-		auto & keys = animCurve.getKeys();
-		for (auto i = 0; i < keys.size()-1; i++) {
-			Key keyA = keys.at(i);
-			Key keyB = keys.at(i+1);
-
-			// draw x curve
-			glm::vec2 posAx = glm::vec2(keyA.frame*10, keyA.pos.x );
-			glm::vec2 posBx = glm::vec2(keyB.frame*10, keyB.pos.x);
-
-			addLineSegment(posAx, posBx, ImColor(255,0,0));
-
-			// draw y curve
-			glm::vec2 posAy = glm::vec2(keyA.frame * 10, keyA.pos.y);
-			glm::vec2 posBy = glm::vec2(keyB.frame * 10, keyB.pos.y);
-			addLineSegment(posAy, posBy, ImColor(0, 255, 0));
-		}
-		for (auto & key : keys) {
-			ImGui::PushID(&key);
-			glm::vec2 Cx = glm::vec2(key.frame * 10, key.pos.x);
-			if (Im2D::DragPoint("##Cx", &Cx, 4.0)) {
-				key.frame = Cx.x / 10;
-				key.pos.x = Cx.y;
+		
+		std::vector<AnimCurve*> curves;
+		if (ImGui::Button("Insert Key At current frame")) {
+			for (AnimCurve * animCurve : curves) {
+				animCurve->insertKeyAtFrame(F);
 			}
-			glm::vec2 Cy = glm::vec2(key.frame * 10, key.pos.y);
-			if (Im2D::DragPoint("##Cy", &Cy, 4.0)) {
-				key.frame = Cy.x / 10;
-				key.pos.y = Cy.y;
+		}
+		if (ImGui::Button("Delete Selected Keys")) {
+			for (AnimCurve * animCurve : curves) {
+				auto & keys = animCurve->getKeys();
+				for (int i = keys.size() - 1; i >= 0; i--) {
+					if (keys.at(i).selected) {
+						keys.erase(keys.begin() + i);
+					}
+				}
 			}
-			ImGui::PopID();
+		}
+		Im2D::ViewerBegin("viewport", ImVec2(), Im2DViewportFlags_Grid | Im2DViewportFlags_AllowNonUniformZoom);
+
+		// Handle selection
+		static bool isSelecting{ false };
+		static glm::vec2 selectionFrom;
+		static glm::vec2 selectionTo;
+		if (ImGui::IsItemActivated() && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl) {
+			isSelecting = true;
+			selectionFrom.x = ImGui::GetMousePos().x;
+			selectionFrom.y = ImGui::GetMousePos().y;
+			selectionTo.x = selectionFrom.x;
+			selectionTo.y = selectionFrom.y;
+		}
+		if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0) && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl) {
+			selectionTo.x = ImGui::GetMousePos().x;
+			selectionTo.y = ImGui::GetMousePos().y;
+		}
+		if (ImGui::IsItemDeactivated()) {
+			isSelecting = false;
 		}
 
-		// 
-		addLineSegment({ F * 10,0 }, { F * 10,500 }, ImColor(255,255,0, 128));
+		if (isSelecting) {
+			// select keys
+			Rect selectionRect(selectionFrom, selectionTo);
+			for (AnimCurve * animCurve : curves) {
+				for (auto & key : animCurve->getKeys()) {
+					glm::vec2 P = toScreen({ key.frame, key.value });
+					if (selectionRect.contains(P)) {
+						key.selected = true;
+					}
+					else {
+						key.selected = false;
+					}
+				}
+			}
+
+			// draw selection rect
+			auto window = ImGui::GetCurrentWindow();
+			window->DrawList->AddRectFilled(
+				ImVec2(selectionRect.left(), selectionRect.top()),
+				ImVec2(selectionRect.right(), selectionRect.bottom()),
+				ImColor(255, 255, 255, 25)
+			);
+			window->DrawList->AddRect(
+				ImVec2(selectionRect.left(), selectionRect.top()),
+				ImVec2(selectionRect.right(), selectionRect.bottom()),
+				ImColor(255, 255, 255, 200)
+			);
+		}
+
+		// draw anim curves
+		for (AnimCurve * animCurve : curves) {
+			auto & keys = animCurve->getKeys();
+			for (auto i = 0; i < keys.size() - 1; i++) {
+				Key keyA = keys.at(i);
+				Key keyB = keys.at(i + 1);
+
+				// draw x curve
+				glm::vec2 posAx = glm::vec2(keyA.frame, keyA.value);
+				glm::vec2 posBx = glm::vec2(keyB.frame, keyB.value);
+				addLineSegment(posAx, posBx, animCurve->color);
+			}
+		}
+
+		// modify keys
+		bool anySelectedPointDragging{ false };
+		for (AnimCurve * animCurve : curves) {
+			auto & keys = animCurve->getKeys();
+			for (auto & key : keys) {
+				ImGui::PushID(&key);
+				glm::vec2 C = glm::vec2(key.frame, key.value);
+
+				ImGui::PushStyleColor(ImGuiCol_Button,
+					key.selected ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 0.5, 0.5)
+				);
+
+				if (Im2D::Button("##C", C, glm::vec2(16.0))) {
+					key.selected = !key.selected;
+					cout << "clicked" << " selected: " << key.selected << endl;
+					cout << "       active: " << ImGui::IsItemActive() << endl;
+				}
+
+				if (key.selected && ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
+					anySelectedPointDragging = true;
+
+				ImGui::PopStyleColor();
+
+				ImGui::PopID();
+			}
+		}
+
+		if (anySelectedPointDragging) {
+			for (AnimCurve * animCurve : curves) {
+				auto & keys = animCurve->getKeys();
+				for (auto & key : keys) {
+					if (key.selected) {
+						key.frame += Im2D::GetMouseDelta().x;
+						key.value += Im2D::GetMouseDelta().y;
+					}
+				}
+			}
+		}
+
+		// handle shortcuts
+		//for (auto i = 0; i < 512; i++)
+		//	if (io.KeysDown[i])
+		//		cout << i << endl;
+
+		if (ImGui::IsWindowHovered())
+			if (ImGui::IsKeyPressed(83/*s*/))
+				for (auto animCurve : curves) {
+					if (animCurve->hasKeyAtFrame(F)) {
+						animCurve->removeKeyAtFrame(F);
+					}
+					else {
+						animCurve->insertKeyAtFrame(F);
+					}
+				}
+
+		// draw current time horizontal line
+		auto top = fromScreen({ 0, ImGui::GetWindowPos().y }).y;
+		auto bottom = fromScreen({ 0, ImGui::GetWindowPos().y + ImGui::GetWindowHeight() }).y;
+		addLineSegment({ F, top }, { F, bottom }, ImColor(255, 255, 0, 128));
+
+		ImVec2 mousePos = ImGui::GetMousePos();
+		auto P = fromScreen(glm::vec2(mousePos.x, mousePos.y));
+		ImGui::SetCursorScreenPos({ mousePos.x, mousePos.y-ImGui::GetFontSize()});
+		ImGui::Text("mouse(%f, %f) -> P(%f, %f)",mousePos.x, mousePos.y ,(float)P.x, (float)P.y) ;
+		
+
+		int windowLeft = ImGui::GetWindowPos().x;
+		int windowRight = ImGui::GetWindowPos().x + ImGui::GetWindowWidth();
+		ImGui::SetCursorPos(ImVec2(0, 0));
+		ImGui::PushItemWidth(ImGui::GetWindowWidth());
+		ImGui::SliderInt("graphtime", &F, fromScreen({ windowLeft, 0 }).x, fromScreen({ windowRight, 0 }).x);
+		ImGui::PopItemWidth();
+
 		Im2D::ViewerEnd();
 	}ImGui::End();
 }

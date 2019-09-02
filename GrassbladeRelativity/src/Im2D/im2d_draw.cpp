@@ -2,7 +2,7 @@
 #include "im2d_draw.h"
 #include "Im2D.h"
 #include "imgui_internal.h"
-
+#include <ostream>
 // Draw
 glm::vec2 toScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
@@ -59,14 +59,20 @@ void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color, float thi
 	addLineSegment(B, B + (-U - V)*head, color, thickness);
 }
 
-void addGrid() {
-	// Draw adaptive grid
-	float scale = Im2D::GetCurrentContext()->viewMatrix[0][0];
-	int step = pow(10, ceil(log10(1 / scale))) * 10;
+void addAdaptiveGrid() {
+	// TODO: add minimum distance and adaptation frequency parameters;
+	// Calculate adaptive grid boundary and step for each axis	
+	glm::vec2 scale;
+	scale.x = Im2D::GetCurrentContext()->viewMatrix[0][0];
+	scale.y = Im2D::GetCurrentContext()->viewMatrix[1][1];
+	glm::vec2 step;
+	static float k = 10;
+	static float d = 10;
+	//ImGui::DragFloat("k", &k);
+	//ImGui::DragFloat("d", &d);
+	step.x = pow(k, ceil(log(1 / scale.x) / log(k))) * d;
+	step.y = pow(k, ceil(log(1 / scale.y) / log(k))) * d;
 
-	//float t = ceil(log10(1 / scale)) - log10(1 / scale);
-
-	//ImGui::Text("%.2f, %.2f", t, 1 - t);
 	glm::vec2 boundary_min;
 	glm::vec2 boundary_max;
 	glm::vec2 window_pos{ ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
@@ -74,23 +80,25 @@ void addGrid() {
 
 	boundary_min = fromScreen(window_pos);
 	boundary_max = fromScreen(window_pos + window_size);
-	boundary_min = glm::vec2(floor(boundary_min.x / step)*step, floor(boundary_min.y / step)*step);
-	boundary_max = glm::vec2(ceil(boundary_max.x / step)*step, ceil(boundary_max.y / step)*step);
+	boundary_min = glm::vec2(floor(boundary_min.x / (int)step.x)*(int)step.x, floor(boundary_min.y / (int)step.y)*(int)step.y);
+	boundary_max = glm::vec2(ceil(boundary_max.x / (int)step.x)*(int)step.x, ceil(boundary_max.y / (int)step.y)*(int)step.y);
 
-	for (int x = boundary_min.x; x < boundary_max.x; x += step) {
+	//
+	for (int x = boundary_min.x; x < boundary_max.x; x += (int)step.x) {
 		glm::vec2 A = glm::vec2(x, boundary_min.y);
 		glm::vec2 B = glm::vec2(x, boundary_max.y);
-		addLineSegment(A, B, ImColor(128, 128, 128, 56), x % (step * 10) ? 1 : 2);
+		addLineSegment(A, B, ImColor(128, 128, 128, 56), x % ((int)step.x * 10) ? 1 : 2);
 	}
 
-	for (int y = boundary_min.y; y < boundary_max.y; y += step) {
+	for (int y = boundary_min.y; y < boundary_max.y; y += (int)step.y) {
 		glm::vec2 A = glm::vec2(boundary_min.x, y);
 		glm::vec2 B = glm::vec2(boundary_max.x, y);
-		addLineSegment(A, B, ImColor(128, 128, 128, 56), y % (step * 10) ? 1 : 2);
+		addLineSegment(A, B, ImColor(128, 128, 128, 56), y % ((int)step.y * 10) ? 1 : 2);
+		addText(glm::vec2(fromScreen(window_pos+glm::vec2(20, 0)).x, A.y), "%", y);
 	}
 
-	addArrow(glm::vec2(), glm::vec2(step * 5, 0), ImColor(255, 0, 0, 100));
-	addArrow(glm::vec2(), glm::vec2(0, step * 5), ImColor(0, 255, 0, 100));
+	addArrow(glm::vec2(), glm::vec2((int)step.x * 5, 0), ImColor(255, 0, 0, 30));
+	addArrow(glm::vec2(), glm::vec2(0, (int)step.y * 5), ImColor(0, 255, 0, 30));
 }
 
 glm::vec2 cubicBezier(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, float t) {

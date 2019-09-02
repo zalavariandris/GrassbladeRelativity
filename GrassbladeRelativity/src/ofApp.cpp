@@ -65,8 +65,8 @@ void ofApp::setup() {
 	 */
 	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.0;
-
+	ImGui::GetIO().FontGlobalScale = 1.5;
+	
 	//OF texture handling
 	ofDisableArbTex();
 	//ofEnableNormalizedTexCoords(); // needless with disabled ARB textures, but left it here for clarity.
@@ -157,6 +157,7 @@ void ofApp::draw() {
 	//showDemos();
 	//showGraphEditorDemo();
 	//ImGui::ShowDemoWindow();
-	showAnimationDemo();
+	//showAnimationDemo();
+	//showGraphEditorDemo();
 	gui.end();
 }

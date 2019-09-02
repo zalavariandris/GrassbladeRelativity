@@ -16,7 +16,7 @@ void addText(glm::vec2 P, char * fmt, ...);
 //
 void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color, float thickness = 1.0);
 
-void addGrid();
+void addAdaptiveGrid();
 
 glm::vec2 cubicBezier(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, float t);
 

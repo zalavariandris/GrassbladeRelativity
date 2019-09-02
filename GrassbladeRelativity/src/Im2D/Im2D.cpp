@@ -19,6 +19,18 @@ glm::vec2 Im2D::GetMousePos() {
 	return fromScreen(glm::vec2( mousePos.x, mousePos.y ));
 }
 
+glm::vec2 Im2D::GetMouseDelta() {
+	Im2DContext * ctx = Im2D::GetCurrentContext();
+
+	ImGuiIO io = ImGui::GetIO();
+		
+	glm::vec2 scale = Im2D::getZoom();
+	return glm::vec2(
+		io.MouseDelta.x / scale.x,
+		io.MouseDelta.y / scale.y
+	);
+}
+
 bool Im2D::DragBezierSegment(char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D) {
 	// draw curve
 	addBezierSegment(*A, *B, *C, *D);
@@ -66,7 +78,7 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, 
 	glm::vec2 pan((*viewMatrix)[2][0] / zoom.x, (*viewMatrix)[2][1] / zoom.y); //get pan
 
 	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) && !ImGui::GetIO().KeyAlt ||
-		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt))) {
+		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl))) {
 		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
 		float h = io.MouseDelta.x * 1 / scale.x; // horizontal
 		float v = io.MouseDelta.y * 1 / scale.y; // vertical
@@ -82,15 +94,20 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, 
 	}
 
 	// handle nonuniform scale with middlemouse+alt
-	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt)) {
-		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
-		float h = io.MouseDelta.x * 1; // horizontal
-		float v = io.MouseDelta.y * -1; // vertical
-		
-		zoom *= glm::vec2(1 + h*0.01, 1 + v * 0.01);
-		std::cout << "non uniform zoom: " << zoom.x << ", " << zoom.y << std::endl;
-		changed = true;
-	}
+
+		if (ImGui::IsItemActive() && // item is active
+			((ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt) || // MMB and ALT
+			(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && ImGui::GetIO().KeyCtrl))) { //LMB + CTRL+ALT
+			glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
+			float h = io.MouseDelta.x * 1; // horizontal
+			float v = io.MouseDelta.y * -1; // vertical
+			if (!IndependentZoom) {
+				h = v = (h + v) / 2;
+			}
+			zoom *= glm::vec2(1 + h * 0.01, 1 + v * 0.01);
+			changed = true;
+		}
+
 	 
 	if (changed) {
 		*viewMatrix = glm::mat3({       zoom.x,          0, 0,
@@ -101,7 +118,7 @@ bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, 
 	return changed;
 }
 
-void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFlags_ flags) {
+void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFlags flags) {
 	ImGui::BeginChild(label_id, size, true,
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoScrollbar |
@@ -123,7 +140,7 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFl
 
 	// Screen control
 	ImGui::SetCursorScreenPos(cursorScreenPos);
-	if (ScreenControls("ViewerControls", viewportSize, &viewMatrix), true) {
+	if (ScreenControls("ViewerControls", viewportSize, &viewMatrix, flags & Im2DViewportFlags_AllowNonUniformZoom)) {
 		storage_mat[id] = viewMatrix;
 	}
 
@@ -136,12 +153,13 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFl
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
 	// Toolbar
-	ImGui::SetCursorScreenPos(cursorScreenPos);
-	ImGui::Text(label_id);
+	//ImGui::SetCursorScreenPos(cursorScreenPos);
+	//ImGui::Text(label_id);
+	window->DrawList->AddText(cursorScreenPos, ImColor(255, 255, 255), label_id);
 
 	// Add adaptive grid
 	if(flags & Im2DViewportFlags_Grid)
-		addGrid();
+		addAdaptiveGrid();
 }
 
 void Im2D::ViewerEnd() {
@@ -151,10 +169,10 @@ void Im2D::ViewerEnd() {
 	ImGui::EndChild();
 }
 
-float Im2D::getZoom() {
+glm::vec2 Im2D::getZoom() {
 	Im2DContext * ctx = GetCurrentContext();
 	glm::mat3 viewMatrix = ctx->viewMatrix;
-	return viewMatrix[0][0];
+	return glm::vec2(viewMatrix[0][0], viewMatrix[1][1]);
 }
 
 glm::vec2 Im2D::getPan() {
@@ -165,12 +183,26 @@ glm::vec2 Im2D::getPan() {
 }
 
 // Gizmos
-bool Im2D::DragPoint(char * label_id, glm::vec2 * P, float r) {
+
+bool Im2D::InvisibleButton(char * label_id, glm::vec2 center, glm::vec2 size) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	Im2DContext * ctx = Im2D::GetCurrentContext();
-	glm::vec2 P1 = toScreen(*P);
-	ImGui::SetCursorScreenPos(ImVec2(P1.x-r, P1.y-r));
-	ImGui::InvisibleButton(label_id, ImVec2(r * 2, r * 2));
+	glm::vec2 P1 = toScreen(center);
+	ImGui::SetCursorScreenPos(ImVec2(P1.x-size.x/2, P1.y-size.y/2));
+	return ImGui::InvisibleButton(label_id, ImVec2(size.x, size.y));
+}
+
+bool Im2D::Button(char * label_id, glm::vec2 center, glm::vec2 size) {
+	ImGuiWindow * window = ImGui::GetCurrentWindow();
+	Im2DContext * ctx = Im2D::GetCurrentContext();
+	glm::vec2 P1 = toScreen(center);
+	ImGui::SetCursorScreenPos(ImVec2(P1.x - size.x / 2, P1.y - size.y / 2));
+	return ImGui::Button(label_id, ImVec2(size.x, size.y));
+}
+
+bool Im2D::DragPoint(char * label_id, glm::vec2 * P, float r) {
+	Im2DContext * ctx = Im2D::GetCurrentContext();
+	Im2D::InvisibleButton(label_id, *P, glm::vec2(r));
 
 	bool changed{ false };
 	if (ImGui::IsItemActive() && ImGui::IsMouseDragging()) {
