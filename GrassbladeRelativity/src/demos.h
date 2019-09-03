@@ -49,7 +49,7 @@ namespace {
 		};
 	}
 
-	void ofDraw(Path path, bool tangents=true) {
+	void ofDraw(Path path, bool verbose=true) {
 		auto segments{ 32 * path.getCurves().size() };
 		for (auto i = 0; i < segments; i++) {
 			double t1 = (double)i / segments;
@@ -60,8 +60,9 @@ namespace {
 			ofDrawLine(P1, P2);
 		};
 
-		if (tangents) {
+		if (verbose) {
 			for (auto segment : path.getSegments()) {
+				ofDrawCircle(segment->_point, 2.0);
 				ofDrawLine(segment->_point, segment->_point + segment->_handleIn);
 				ofDrawLine(segment->_point, segment->_point + segment->_handleOut);
 			}
@@ -94,7 +95,9 @@ public:
 	ImColor color{ 255,255,255,128 };
 	std::string label{ "" };
 	AnimCurve() {};
-	AnimCurve(std::vector<Key> keys) {
+	AnimCurve(std::vector<Key> keys, std::string label="", ImColor color=ImColor(255,255,255,128))
+		:label(label), color(color)
+	{
 		setKeys(keys);
 	};
 
@@ -163,7 +166,7 @@ public:
 		_keys.insert(_keys.begin() + i1, 1, Key(frame, value));
 	}
 
-	int getKeyIndexAtFrame(double frame) {
+	int getKeyIndexAtFrame(int frame) {
 		for (int i = 0; i < _keys.size(); i++) {
 			if (getKeys()[i].frame == frame) {
 				return i;
@@ -172,11 +175,11 @@ public:
 		return -1;
 	}
 
-	bool hasKeyAtFrame(double frame) {
+	bool hasKeyAtFrame(int frame) {
 		return getKeyIndexAtFrame(frame) >= 0;
 	}
 
-	bool removeKeyAtFrame(double frame) {
+	bool removeKeyAtFrame(int frame) {
 		auto idx = getKeyIndexAtFrame(frame);
 		if (idx < 0)
 			return false;
@@ -241,6 +244,8 @@ void TimeSlider(const char * label_id, int * frame, bool * play, int * begin, in
 	ImGui::SameLine();
 	if (ImGui::Button(">>|", ImVec2(btnWidth, btnHeight)))
 		*frame = *end;
+	ImGui::SameLine();
+	ImGui::Text("%.0ffps", ofGetFrameRate());
 	ImGui::EndGroup();//end buttons group
 	ImGui::EndGroup();//end timeslider group
 }
@@ -263,7 +268,7 @@ void GraphEditor(const char * label_id, std::vector<AnimCurve*> curves, int * F)
 		for (AnimCurve * curve : curves) {
 			for (auto &key : curve->getKeys()) {
 				auto P = toScreen({ key.frame, key.value });
-				if (Rect(coords - glm::vec2(tolerance), coords + glm::vec2(tolerance)).contains(P)) {
+				if (ImRect(coords - glm::vec2(tolerance), coords + glm::vec2(tolerance)).Contains(P)) {
 					return &key;
 				}
 			}
@@ -272,12 +277,12 @@ void GraphEditor(const char * label_id, std::vector<AnimCurve*> curves, int * F)
 	};
 
 	// get all keys inside a rect
-	auto getKeysInRect = [&](Rect rect, double tolerance = 5)->std::vector<Key*> {
+	auto getKeysInRect = [&](ImRect rect, double tolerance = 5)->std::vector<Key*> {
 		std::vector<Key*> keysInRect;
 		for (AnimCurve * curve : curves) {
 			for (auto &key : curve->getKeys()) {
 				auto P = toScreen({ key.frame, key.value });
-				if (rect.contains(P)) {
+				if (rect.Contains(P)) {
 					keysInRect.push_back(&key);
 				}
 			}
@@ -327,17 +332,22 @@ void GraphEditor(const char * label_id, std::vector<AnimCurve*> curves, int * F)
 		}
 	}
 
+	ImRect selectionRect{ 0,0,0,0 };
 	if (action == ACTION_SELECTING && ImGui::IsItemActive() && ImGui::IsMouseDragging(0) && !AnyModifierKey) {
 		// extend rect selection
 		selectionTo.x = ImGui::GetMousePos().x;
 		selectionTo.y = ImGui::GetMousePos().y;
 
 		// select keys in rectangle
-		Rect selectionRect(selectionFrom, selectionTo);
+		selectionRect = ImRect(selectionFrom, selectionTo);
+		if (selectionRect.Min.x > selectionRect.Max.x)
+			swap(selectionRect.Min.x, selectionRect.Max.x);
+		if (selectionRect.Min.y > selectionRect.Max.y)
+			swap(selectionRect.Min.y, selectionRect.Max.y);
 		for (AnimCurve * curve : curves) {
 			for (auto &key : curve->getKeys()) {
 				auto P = toScreen({ key.frame, key.value });
-				if (selectionRect.contains(P)) {
+				if (selectionRect.Contains(P)) {
 					key.selected = true;
 				}
 				else {
@@ -416,16 +426,15 @@ void GraphEditor(const char * label_id, std::vector<AnimCurve*> curves, int * F)
 
 	//draw selection rectangle
 	if (action == ACTION_SELECTING) {
-		Rect selectionRect(selectionFrom, selectionTo);
 		auto window = ImGui::GetCurrentWindow();
 		window->DrawList->AddRectFilled(
-			ImVec2(selectionRect.left(), selectionRect.top()),
-			ImVec2(selectionRect.right(), selectionRect.bottom()),
+			selectionRect.Min,
+			selectionRect.Max,
 			ImColor(255, 255, 255, 25)
 		);
 		window->DrawList->AddRect(
-			ImVec2(selectionRect.left(), selectionRect.top()),
-			ImVec2(selectionRect.right(), selectionRect.bottom()),
+			selectionRect.Min,
+			selectionRect.Max,
 			ImColor(255, 255, 255, 200)
 		);
 	}
@@ -528,7 +537,7 @@ void showPathDemo() {
 
 void showReadDemo() {
 	auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";/*test file: ofToDataPath("framecounter.mov")*/
-	static Reader reader(file, false);
+	static Reader reader(file);
 	ImGui::Text("file: %s", !reader.getFile().empty() ? reader.getFile().c_str() : "-no file-");
 	ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
 	ImGui::Separator();
@@ -723,6 +732,19 @@ glm::vec2 Storage(std::string id) {
 }
 
 void showGrassDemo() {
+	// time
+	static int F{ 0 }, begin{ 0 }, end{ 99 };
+	static bool play{ false };
+
+	// loop 
+	if (play)
+		F++;
+	if (play && F > end)
+		F = begin;
+
+	ImGui::Begin("Outliner");
+	ImGui::End();
+
 	ImGui::SetNextWindowBgAlpha(0.0);
 	ImGui::Begin("Grassblade"); // TODO: reenter Im2D viewport
 	Im2D::ViewerBegin("viewport");
@@ -731,12 +753,11 @@ void showGrassDemo() {
 	static glm::vec2 A0{ Storage("A0") }, B0{ Storage("B0") }, C0{ Storage("C0") };
 	static glm::vec2 A1{ Storage("A1") }, B1{ Storage("B1") }, C1{ Storage("C1") };
 
-	Im2D::DragPoint("A0", &A0);
-	Im2D::DragPoint("B0", &B0);
-	Im2D::DragPoint("C0", &C0);
+	// edit target points
 	Im2D::DragPoint("A1", &A1);
 	Im2D::DragPoint("B1", &B1);
 	Im2D::DragPoint("C1", &C1);
+
 
 	/* create the source and the target paths from points */
 	Path path0;
@@ -745,38 +766,110 @@ void showGrassDemo() {
 		make_shared<Segment>(B0, (A0 - C0)*0.25, (C0 - A0)*0.25),
 		make_shared<Segment>(C0)
 	});
+
 	Path path1;
 	path1.add({ 
 		make_shared<Segment>(A1),
 		make_shared<Segment>(B1, (A1-C1)*0.25, (C1-A1)*0.25), 
 		make_shared<Segment>(C1)
 	});
-	
+
+	//extend paths
+	static float length{ 250 };
+	ImGui::Begin("Outliner");
+	ImGui::DragFloat("extend", &length);
+	ImGui::End();
+	auto firstLocation0 = path0.getLocationAtTime(0);
+	auto lastLocation0 = path0.getLocationAtTime(1.0);
+	path0.insert(0, make_shared<Segment>(firstLocation0._point-firstLocation0._tangent*length));
+	path0.add(make_shared<Segment>(lastLocation0._point + lastLocation0._tangent*length));
+
+	auto firstLocation1 = path1.getLocationAtTime(0);
+	auto lastLocation1 = path1.getLocationAtTime(1.0);
+	path1.insert(0, make_shared<Segment>(firstLocation1._point - firstLocation1._tangent*length));
+	path1.add(make_shared<Segment>(lastLocation1._point + lastLocation1._tangent*length));
+
+
+	/* read the movie file */
+	static auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";/*test file: ofToDataPath("framecounter.mov")*/
+	static Reader reader(file);
+	auto & currentImage = reader.getImageAtFrame(F);
+
+	// draw paths
 	static ofCamera cam;
 	ofSyncCameraToViewport(cam);
 	cam.begin();
+	currentImage.draw(0,0);
 	ofDraw(path0);
 	ofDraw(path1);
+
 	cam.end();
-
-	/* read the movie file */
-	static std::string file;
-
-	/* control time */
-	static int F{ 0 }, begin{ 0 }, end{ 100 };
-
-	/* animate source path */
-	//AnimCurve Ax, Ay, Bx, By, Cx, Cy;
-	//A0 = { Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) };
-	//B0 = { Bx.getValueAtFrame(F), By.getValueAtFrame(F) };
-	//C0 = { Cx.getValueAtFrame(F), Cy.getValueAtFrame(F) };
-
 	Im2D::ViewerEnd();
 	ImGui::End();
+
+	/* control time */
+	ImGui::Begin("Outliner");
+	ImGui::Text("file: %s", !reader.getFile().empty() ? reader.getFile().c_str() : "-no file-");
+	ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
+	ImGui::End();
+
+	ImGui::Begin("TimeSlider");
+	TimeSlider("TimeSlider", &F, &play, &begin, &end);
+	ImGui::End();
+
+
+
+	/* animate source path */
+	static AnimCurve
+		Ax{ { Key(0,70+50) } ,"Ax", ImColor(255,0,0)},
+		Ay{ { Key(0,-140) } ,"Ay", ImColor(0,255,0) },
+		Bx{ { Key(0,30+50)} ,"Bx", ImColor(255,0,0) },
+		By{ { Key(0,-30)} ,"By", ImColor(0,255,0) },
+		Cx{ { Key(0,20+50)} ,"Cx" , ImColor(255,0,0) },
+		Cy{ { Key(0,125)} ,"Cy", ImColor(0,255,0) };
+
+	ImGui::Begin("GraphEditor");
+	std::vector<AnimCurve*> curves = { &Ax, &Ay, &Bx, &By, &Cx, &Cy };
+	GraphEditor("GraphEditor", curves, &F);
+	ImGui::End();
+
+	// Handle shortcuts
+	if (ImGui::IsKeyPressed(83/*s*/)) {
+		for (AnimCurve * animCurve : curves) {
+			if (animCurve->hasKeyAtFrame(F)) {
+				animCurve->removeKeyAtFrame(F);
+			}
+			else {
+				animCurve->insertKeyAtFrame(F);
+			}
+		}
+	}
+
+	A0 = { Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) };
+	B0 = { Bx.getValueAtFrame(F), By.getValueAtFrame(F) };
+	C0 = { Cx.getValueAtFrame(F), Cy.getValueAtFrame(F) };
+
+	/* layout windows*/
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(200, ofGetHeight()-100));
+	ImGui::Begin("Outliner"); ImGui::End();
+
+	ImGui::SetNextWindowPos(ImVec2(200, 0));
+	ImGui::SetNextWindowSize(ImVec2((ofGetWidth()-200) / 2, ofGetHeight() -100));
+	ImGui::Begin("Grassblade"); ImGui::End();
+
+	ImGui::SetNextWindowPos(ImVec2(200+(ofGetWidth() - 200) / 2, 0));
+	ImGui::SetNextWindowSize(ImVec2((ofGetWidth() - 200)/2, ofGetHeight() -100));
+	ImGui::Begin("GraphEditor"); ImGui::End();
+
+	ImGui::SetNextWindowPos(ImVec2(0, ofGetHeight() -100));
+	ImGui::SetNextWindowSize(ImVec2(ofGetWidth(), 100));
+	ImGui::Begin("TimeSlider"); ImGui::End();
+	
 }
 
 void showDemos() {
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 	// show model demos
 	//if (ImGui::Begin("ReadDemo")) {
 	//	showReadDemo();

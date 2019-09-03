@@ -85,7 +85,6 @@
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.h" />
-    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\imconfig.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
@@ -93,6 +92,9 @@
     <ClInclude Include="src\Im2DPaper\Im2DPaper.h" />
     <ClInclude Include="src\Reader.h" />
     <ClInclude Include="src\demos.h" />
+    <ClInclude Include="..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
+    <ClInclude Include="src\Im2D\demo.h" />
+    <ClInclude Include="src\Geo\Basic.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

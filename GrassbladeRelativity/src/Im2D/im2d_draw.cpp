@@ -6,7 +6,7 @@
 // Draw
 glm::vec2 toScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
-	glm::mat3 projectionView = ctx->projectionMatrix * ctx->viewMatrix;
+	glm::mat3 projectionView = ctx->CurrentViewer->projectionMatrix * ctx->CurrentViewer->viewMatrix;
 
 	glm::vec3 pos = projectionView * glm::vec3(P.x, P.y, 1);
 	return glm::vec2(pos.x, pos.y);
@@ -14,7 +14,7 @@ glm::vec2 toScreen(glm::vec2 P) {
 
 glm::vec2 fromScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
-	glm::mat3 projectionView = ctx->projectionMatrix * ctx->viewMatrix;
+	glm::mat3 projectionView = ctx->CurrentViewer->projectionMatrix * ctx->CurrentViewer->viewMatrix;
 	return glm::vec3(P, 1) * glm::transpose(glm::inverse(projectionView));
 }
 
@@ -64,7 +64,7 @@ void addText(glm::vec2 P, const char * fmt, ...) {
 
 //
 void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color, float thickness) {
-	float scale = Im2D::GetCurrentContext()->viewMatrix[0][0];
+	float scale = Im2D::GetCurrentContext()->CurrentViewer->viewMatrix[0][0];
 	addLineSegment(A, B, color, thickness);
 	glm::vec2 V(glm::normalize(B - A) / scale);
 	glm::vec2 U(-V.y, V.x);
@@ -77,8 +77,8 @@ void addAdaptiveGrid() {
 	// TODO: add minimum distance and adaptation frequency parameters;
 	// Calculate adaptive grid boundary and step for each axis	
 	glm::vec2 scale;
-	scale.x = Im2D::GetCurrentContext()->viewMatrix[0][0];
-	scale.y = Im2D::GetCurrentContext()->viewMatrix[1][1];
+	scale.x = Im2D::GetCurrentContext()->CurrentViewer->viewMatrix[0][0];
+	scale.y = Im2D::GetCurrentContext()->CurrentViewer->viewMatrix[1][1];
 	glm::vec2 step;
 	static float k = 10;
 	static float d = 10;

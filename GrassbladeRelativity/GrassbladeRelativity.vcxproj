@@ -199,6 +199,7 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClCompile Include="src\Paper\numerical.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_internal.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_rectpack.h" />
@@ -211,11 +212,12 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\EngineVk.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.h" />
-    <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\imconfig.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
     <ClInclude Include="src\demos.h" />
+    <ClInclude Include="src\Geo\Basic.hpp" />
+    <ClInclude Include="src\Im2D\demo.h" />
     <ClInclude Include="src\Reader.h" />
     <ClInclude Include="src\Im2DPaper\Im2DPaper.h" />
     <ClInclude Include="src\Paper\CurveLocation.h" />

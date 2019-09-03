@@ -88,7 +88,7 @@ CurveLocation Path::getLocationAtTime(double t) const {
 	//
 	auto minT = Numerical::CURVETIME_EPSILON;
 	auto maxT = 1 - minT;
-	if (t < minT) // TODO: !!! probably using Numerical::CURVETIME_EPSILON is safer
+	if (t < minT)
 		return CurveLocation(*getFirstCurve(), 0.0);
 
 	if (t > maxT)

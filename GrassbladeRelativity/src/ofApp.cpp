@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include "Reader.h"
 #include "demos.h"
+#include "Im2D/demo.h"
 
 glm::vec2 curveToRect(Curve & curve, glm::vec2 uv) {
 	double distance = uv.x;
@@ -156,5 +157,6 @@ void ofApp::draw() {
 	gui.begin();
 	//ImGui::ShowDemoWindow();
 	showDemos();
+	//showViewerDemo();
 	gui.end();
 }

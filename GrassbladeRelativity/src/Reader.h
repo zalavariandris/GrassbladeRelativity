@@ -87,7 +87,7 @@ public:
 		return _file;
 	}
 
-	Reader(std::string file, bool useCache) {
+	Reader(std::string file) {
 		setFile(file);
 	}
 
