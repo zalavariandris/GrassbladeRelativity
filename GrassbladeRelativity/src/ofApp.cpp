@@ -119,7 +119,7 @@ void ofApp::showGrassblade() {
 		Im2D::DragSegment("target", segment.get());
 		ImGui::PopID();
 	}
-	syncCameraToViewport(camera);
+	ofSyncCameraToViewport(camera);
 	Im2D::ViewerEnd();
 	ImGui::End();
 

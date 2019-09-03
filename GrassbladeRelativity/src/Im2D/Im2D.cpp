@@ -31,7 +31,7 @@ glm::vec2 Im2D::GetMouseDelta() {
 	);
 }
 
-bool Im2D::DragBezierSegment(char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D) {
+bool Im2D::DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D) {
 	// draw curve
 	addBezierSegment(*A, *B, *C, *D);
 	
@@ -61,7 +61,7 @@ bool Im2D::DragBezierSegment(char * str_id, glm::vec2 * A, glm::vec2 * B, glm::v
 }
 
 // Viewer
-bool ScreenControls(char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, bool IndependentZoom=false) {
+bool ScreenControls(const char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, bool IndependentZoom=false) {
 	bool changed{ false };
 	ImGui::InvisibleButton(str_id, size);
 	ImGui::SetItemAllowOverlap();
@@ -183,7 +183,7 @@ glm::vec2 Im2D::getPan() {
 
 // Gizmos
 
-bool Im2D::InvisibleButton(char * label_id, glm::vec2 center, glm::vec2 size) {
+bool Im2D::InvisibleButton(const char * label_id, glm::vec2 center, glm::vec2 size) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	glm::vec2 P1 = toScreen(center);
@@ -191,7 +191,7 @@ bool Im2D::InvisibleButton(char * label_id, glm::vec2 center, glm::vec2 size) {
 	return ImGui::InvisibleButton(label_id, ImVec2(size.x, size.y));
 }
 
-bool Im2D::Button(char * label_id, glm::vec2 center, glm::vec2 size) {
+bool Im2D::Button(const char * label_id, glm::vec2 center, glm::vec2 size) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	glm::vec2 P1 = toScreen(center);
@@ -199,7 +199,7 @@ bool Im2D::Button(char * label_id, glm::vec2 center, glm::vec2 size) {
 	return ImGui::Button(label_id, ImVec2(size.x, size.y));
 }
 
-bool Im2D::DragPoint(char * label_id, glm::vec2 * P, float r) {
+bool Im2D::DragPoint(const char * label_id, glm::vec2 * P, float r) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	Im2D::InvisibleButton(label_id, *P, glm::vec2(r));
 

@@ -86,10 +86,10 @@ namespace Im2D {
 	glm::vec2 GetMouseDelta();
 
 	// Gizmos
-	bool InvisibleButton(char * label_id, glm::vec2 pos, glm::vec2 size);
-	bool Button(char * label_id, glm::vec2 pos, glm::vec2 size);
-	bool DragPoint(char * label_id, glm::vec2 * P, float r = 8);
-	bool DragBezierSegment(char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D);
+	bool InvisibleButton(const char * label_id, glm::vec2 pos, glm::vec2 size);
+	bool Button(const char * label_id, glm::vec2 pos, glm::vec2 size);
+	bool DragPoint(const char * label_id, glm::vec2 * P, float r = 8);
+	bool DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D);
 
 	// Items
 }
