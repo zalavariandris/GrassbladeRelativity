@@ -66,13 +66,14 @@ void ofApp::setup() {
 	 */
 	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.0;
+	ImGui::GetIO().FontGlobalScale = 1.5;
+	
 	
 	//OF texture handling
 	ofDisableArbTex();
 	//ofEnableNormalizedTexCoords(); // needless with disabled ARB textures, but left it here for clarity.
 	ofSetVerticalSync(true);
-	ofSetBackgroundColor(ofColor(40, 40, 40));
+	ofSetBackgroundColor(ofColor(10, 10, 10));
 
 	// camera
 	camera.enableOrtho();
@@ -155,8 +156,10 @@ void ofApp::showGrassblade() {
 void ofApp::draw() {
 	
 	gui.begin();
+	//showGrassblade();
 	//ImGui::ShowDemoWindow();
-	showDemos();
-	//showViewerDemo();
+	//showDemos();
+	//ImGui::ShowStyleEditor();
+	showViewerDemo();
 	gui.end();
 }

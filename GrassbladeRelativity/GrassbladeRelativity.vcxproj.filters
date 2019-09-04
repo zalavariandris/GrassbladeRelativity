@@ -92,9 +92,9 @@
     <ClInclude Include="src\Im2DPaper\Im2DPaper.h" />
     <ClInclude Include="src\Reader.h" />
     <ClInclude Include="src\demos.h" />
-    <ClInclude Include="..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
     <ClInclude Include="src\Im2D\demo.h" />
     <ClInclude Include="src\Geo\Basic.hpp" />
+    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

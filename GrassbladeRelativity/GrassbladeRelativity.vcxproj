@@ -199,7 +199,7 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClCompile Include="src\Paper\numerical.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
+    <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imgui_internal.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imstb_rectpack.h" />

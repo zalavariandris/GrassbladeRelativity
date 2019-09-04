@@ -64,8 +64,11 @@ bool Im2D::DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, 
 // Viewer
 bool ScreenControls(const char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, bool IndependentZoom=false) {
 	bool changed{ false };
-	ImGui::InvisibleButton(str_id, size);
-	ImGui::SetItemAllowOverlap();
+	// ImGui does not allow zero size Invisible Button.
+	if (size.x != 0.0f && size.y != 0.0f) {
+		ImGui::InvisibleButton(str_id, size);
+		ImGui::SetItemAllowOverlap();
+	}
 	auto io = ImGui::GetIO();
 
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_None) && ImGui::IsMouseDown(2)) {
@@ -121,7 +124,7 @@ bool ScreenControls(const char * str_id, const ImVec2 & size, glm::mat3 * viewMa
 
 void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFlags flags) {
 	assert(GetCurrentContext()->CurrentViewer == nullptr); /* missing end of the last viewer*/
-	ImGui::Text("GetWindowPos: %f", ImGui::GetWindowPos().x);
+
 	ImGui::BeginChild(label_id, size, true,
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoScrollbar |
@@ -133,12 +136,28 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFl
 	ImRect contentRect = window->ContentsRegionRect; // get the child window content rect in __screen space__
 	ImDrawList * drawList = window->DrawList;
 
+	//ImGuiContext * g = ImGui::GetCurrentContext();
+	//const int current_frame = g->FrameCount;
+	//const bool first_begin_of_the_frame = (window->LastFrameActive != current_frame);
+	//std::cout << "id:" << window->GetID(label_id) << "first_begin: " << first_begin_of_the_frame << std::endl;
+
 	// keep a seperate state for each viewer
 	static std::map<ImGuiID, Im2DViewer*> viewers;
 	if (viewers.find(id) == viewers.end()) {
 		viewers[id] = new Im2DViewer();
 	}
 	Im2DViewer * viewer = viewers.at(id);
+
+	// Update Im2D context to match the actual viewer state
+	Im2DContext * ctx = GetCurrentContext();
+	ctx->CurrentViewer = viewer;
+
+	// 
+	const int current_frame = ImGui::GetCurrentContext()->FrameCount;
+	const bool first_begin_of_the_frame = (viewer->LastFrameActive != current_frame);
+	if (first_begin_of_the_frame) {
+		viewer->LastFrameActive = current_frame;
+	}
 
 	// set projection matrix to the viewer's content rectangle
 	viewer->projectionMatrix = glm::mat3(
@@ -147,20 +166,19 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFl
 		contentRect.GetCenter().x , contentRect.GetCenter().y, 1
 	);
 
-	// Control screen
-	ScreenControls("ViewerControls", contentRect.GetSize(), &(viewer->viewMatrix), flags & Im2DViewportFlags_AllowNonUniformZoom);
+	// When reusing viewport again multiple times a frame, just append content (don't need to setup again)
+	if (first_begin_of_the_frame) {
+		// Control screen
+		ScreenControls("ViewerControls", contentRect.GetSize(), &(viewer->viewMatrix), flags & Im2DViewportFlags_AllowNonUniformZoom);
 
-	// Update Im2D context to match the actual viewer state
-	Im2DContext * ctx = GetCurrentContext();
-	ctx->CurrentViewer = viewer;
+		/* Render */
+		// add label at the top left corner
+		drawList->AddText(contentRect.Min, ImColor(255, 255, 255), label_id);
 
-	/* Render */
-	// add label at the top left corner
-	drawList->AddText(contentRect.Min, ImColor(255, 255, 255), label_id);
-
-	// add adaptive grid
-	if(flags & Im2DViewportFlags_Grid)
-		addAdaptiveGrid();
+		// add adaptive grid
+		if (flags & Im2DViewportFlags_Grid)
+			addAdaptiveGrid();
+	}
 }
 
 void Im2D::ViewerEnd() {
@@ -201,7 +219,9 @@ bool Im2D::Button(const char * label_id, glm::vec2 center, double width, double 
 
 bool Im2D::DragPoint(const char * label_id, glm::vec2 * P, float radius) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
-	Im2D::InvisibleButton(label_id, *P, radius*2, radius*2);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, radius);
+	Im2D::Button(label_id, *P, radius*2, radius*2);
+	ImGui::PopStyleVar();
 
 	bool changed{ false };
 	if (ImGui::IsItemActive() && ImGui::IsMouseDragging()) {
@@ -212,10 +232,8 @@ bool Im2D::DragPoint(const char * label_id, glm::vec2 * P, float radius) {
 		changed = true;
 	}
 
-	ImColor color = ImGui::IsItemHovered() || ImGui::IsItemActive() ? ImColor(255, 255, 255) : ImColor(128, 128, 128);
-	addPoint(*P, color, radius);
+	// add label
 	char * fmt = ImGui::IsItemHovered() || ImGui::IsItemActive() ? "%s (%.2f, %.2f)" : "%s";
-
 	glm::vec2 offset = glm::vec2(radius, -radius) + glm::vec2(0, -ImGui::GetTextLineHeight());
 	float scale = ctx->CurrentViewer->viewMatrix[0][0];
 	offset *= 1 / scale;

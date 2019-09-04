@@ -13,6 +13,7 @@ enum Im2DViewportFlags_
 struct Im2DViewer {
 	glm::mat3 viewMatrix{ 1 };
 	glm::mat3 projectionMatrix{ 1 };
+	int LastFrameActive = -1;
 };
 
 struct Im2DContext {

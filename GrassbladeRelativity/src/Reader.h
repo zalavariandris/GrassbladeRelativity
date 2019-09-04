@@ -7,13 +7,21 @@
 #include <string>
 #include "ofImage.h"
 #include <iostream>
+#include <stdexcept>
 class Reader {
 private:
 	cv::VideoCapture _cap;
 	cv::Mat buffer;
 
 	bool init(std::string file) {
-		return _cap.open(file);
+		if (_cap.open(file)){
+			return true;
+		}
+		return false;
+		//else {
+		//	_cap.open(ofToDataPath("framecounter.mov"));
+		//	return false;
+		//}
 	}
 
 	void destruct() {
