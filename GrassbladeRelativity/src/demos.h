@@ -790,29 +790,45 @@ namespace Field {
 }
 
 void showGrassDemo() {
-	// create time model
+	/* TIME */
+	// model
 	static int F{ 0 }, begin{ 0 }, end{ 99 };
 	static bool play{ false };
 
-	// time logic 
+	// logic 
 	if (play)
 		F++;
 	if (play && F > end)
 		F = begin;
 
-	/* create control points */
+	// Gui
+	ImGui::Begin("TimeSlider");
+	TimeSlider("TimeSlider", &F, &play, &begin, &end);
+	ImGui::End();
+
+	/* CONTROL POINTS */
+	// model
 	static glm::vec2 A0{ Storage("A0") }, B0{ Storage("B0") }, C0{ Storage("C0") };
 	static glm::vec2 A1{ Storage("A1") }, B1{ Storage("B1") }, C1{ Storage("C1") };
+	// Gui
+	ImGui::Begin("Outliner");
+	ImGui::DragFloat("A1.x", &A1.x);
+	ImGui::DragFloat("A1.y", &A1.y);
+	ImGui::DragFloat("B1.x", &B1.x);
+	ImGui::DragFloat("B1.y", &B1.y);
+	ImGui::DragFloat("C1.x", &C1.x);
+	ImGui::DragFloat("C1.y", &C1.y);
+	ImGui::End();
 
-	// create viewport
+	// Gizmo
 	ImGui::SetNextWindowBgAlpha(0.0);
-	ImGui::Begin("Grassblade"); // TODO: reenter Im2D viewport
+	ImGui::Begin("Grassblade");
 	Im2D::ViewerBegin("viewport");
-
-	// edit target points
 	Im2D::DragPoint("A1", &A1);
 	Im2D::DragPoint("B1", &B1);
 	Im2D::DragPoint("C1", &C1);
+	Im2D::ViewerEnd();
+	ImGui::End();
 
 	/* create the source and the target paths from points */
 	Path path0;
@@ -856,7 +872,11 @@ void showGrassDemo() {
 
 	// draw OF
 	static ofCamera cam;
+	ImGui::Begin("Grassblade");
+	Im2D::ViewerBegin("viewport");
 	ofSyncCameraToViewport(cam);
+	Im2D::ViewerEnd();
+	ImGui::End();
 	cam.begin();
 
 	// deform mesh
@@ -869,11 +889,9 @@ void showGrassDemo() {
 		ImGui::DragFloat("height", &plateHeight);
 		ImGui::DragInt("columns", &plateColumns);
 		ImGui::DragInt("rows", &plateRows);
-		static float U, V;
-		ImGui::DragFloat("U", &U);
-		ImGui::DragFloat("V", &V);
 	}
 	ImGui::End();
+
 	plate.set(plateWidth, plateHeight, plateColumns, plateRows); //reset mesh
 	plate.mapTexCoords(0, 1, 1, 0);
 	auto mesh = plate.getMeshPtr();
@@ -897,8 +915,6 @@ void showGrassDemo() {
 	ofDraw(path1);
 
 	cam.end();
-	Im2D::ViewerEnd();
-	ImGui::End();
 
 	/* control time */
 	ImGui::Begin("Outliner");
@@ -906,10 +922,6 @@ void showGrassDemo() {
 		ImGui::Text("file: %s", !reader.getFile().empty() ? reader.getFile().c_str() : "-no file-");
 		ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
 	}
-	ImGui::End();
-
-	ImGui::Begin("TimeSlider");
-	TimeSlider("TimeSlider", &F, &play, &begin, &end);
 	ImGui::End();
 
 	/* animate source path */

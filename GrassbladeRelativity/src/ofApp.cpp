@@ -158,8 +158,8 @@ void ofApp::draw() {
 	gui.begin();
 	//showGrassblade();
 	//ImGui::ShowDemoWindow();
-	//showDemos();
+	showDemos();
 	//ImGui::ShowStyleEditor();
-	showViewerDemo();
+	//showViewerDemo();
 	gui.end();
 }
