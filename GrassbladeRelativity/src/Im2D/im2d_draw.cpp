@@ -4,7 +4,8 @@
 #include "imgui_internal.h"
 #include <ostream>
 // Draw
-glm::vec2 toScreen(glm::vec2 P) {
+
+ImVec2 toScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	glm::mat3 projectionView = ctx->CurrentViewer->projectionMatrix * ctx->CurrentViewer->viewMatrix;
 
@@ -12,10 +13,11 @@ glm::vec2 toScreen(glm::vec2 P) {
 	return glm::vec2(pos.x, pos.y);
 }
 
-glm::vec2 fromScreen(glm::vec2 P) {
+glm::vec2 fromScreen(ImVec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	glm::mat3 projectionView = ctx->CurrentViewer->projectionMatrix * ctx->CurrentViewer->viewMatrix;
-	return glm::vec3(P, 1) * glm::transpose(glm::inverse(projectionView));
+	glm::vec3 result = glm::vec3(P.x, P.y, 1) * glm::transpose(glm::inverse(projectionView));
+	return ImVec2(result.x, result.y);
 }
 
 void addPoint(glm::vec2 P, ImColor color, float r) {

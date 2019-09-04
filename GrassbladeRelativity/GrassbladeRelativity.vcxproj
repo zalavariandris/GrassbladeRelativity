@@ -197,6 +197,8 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\Paper\numerical.cpp" />
+    <ClCompile Include="src\utilities.cpp" />
+    <ClCompile Include="src\Widgets\Widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
@@ -215,9 +217,12 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
-    <ClInclude Include="src\demos.h" />
+    <ClInclude Include="src\Animation\AnimCurve.h" />
+    <ClInclude Include="src\examples\demos.h" />
+    <ClInclude Include="src\examples\grassblade.h" />
     <ClInclude Include="src\Geo\Basic.hpp" />
-    <ClInclude Include="src\Im2D\demo.h" />
+    <ClInclude Include="src\examples\im2d_demos.h" />
+    <ClInclude Include="src\examples\paper_demo.h" />
     <ClInclude Include="src\Reader.h" />
     <ClInclude Include="src\Im2DPaper\Im2DPaper.h" />
     <ClInclude Include="src\Paper\CurveLocation.h" />
@@ -228,6 +233,9 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClInclude Include="src\Im2D\im2d_draw.h" />
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\Paper\numerical.h" />
+    <ClInclude Include="src\utilities.h" />
+    <ClInclude Include="src\Widgets\Widgets.hpp" />
+    <ClInclude Include="src\examples\widgets_demo.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(OF_ROOT)\libs\openFrameworksCompiled\project\vs\openframeworksLib.vcxproj">

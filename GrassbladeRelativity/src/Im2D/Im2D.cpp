@@ -233,11 +233,11 @@ bool Im2D::DragPoint(const char * label_id, glm::vec2 * P, float radius) {
 	}
 
 	// add label
-	char * fmt = ImGui::IsItemHovered() || ImGui::IsItemActive() ? "%s (%.2f, %.2f)" : "%s";
+	char * fmt = ImGui::IsItemHovered() || ImGui::IsItemActive() ? "(%.2f, %.2f)" : "";
 	glm::vec2 offset = glm::vec2(radius, -radius) + glm::vec2(0, -ImGui::GetTextLineHeight());
 	float scale = ctx->CurrentViewer->viewMatrix[0][0];
 	offset *= 1 / scale;
-	addText(*P+offset, fmt, label_id, P->x, P->y);
+	addText(*P+offset, fmt, P->x, P->y);
 
 	return changed;
 }

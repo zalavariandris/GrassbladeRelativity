@@ -12,19 +12,11 @@
 
 class ofApp : public ofBaseApp{
 public:
+	//imgui
 	ofxImGui::Gui gui;
-	ofCamera camera;
 
 	//of
 	void setup();
 	void draw();
 	void update();
-
-	// grassblade
-	Path sourcePath;
-	Path targetPath;
-	ofPlanePrimitive plate;
-	ofTexture texture;
-	void setupGrassblade();
-	void showGrassblade();
 };

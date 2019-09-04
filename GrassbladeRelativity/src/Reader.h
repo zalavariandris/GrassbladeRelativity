@@ -17,11 +17,14 @@ private:
 		if (_cap.open(file)){
 			return true;
 		}
-		return false;
-		//else {
-		//	_cap.open(ofToDataPath("framecounter.mov"));
-		//	return false;
-		//}
+		else {
+			_cap.open(noSignalFile());
+			return false;
+		}
+	}
+
+	std::string noSignalFile() {
+		return ofToDataPath("NoSignal.mov");
 	}
 
 	void destruct() {
@@ -62,6 +65,16 @@ private:
 public:
 	int getFrameCount() const {
 		return _cap.get(cv::CAP_PROP_FRAME_COUNT);
+	}
+
+	int getFirstFrame() const {
+		// if this is a movie file, than the first frame is always 0
+		return 0; 
+	}
+
+	int getLastFrame() const {
+		// if this is a movie file, than the last frame is the frames count-1
+		return getFrameCount() - 1;
 	}
 
 	int getWidth() {
