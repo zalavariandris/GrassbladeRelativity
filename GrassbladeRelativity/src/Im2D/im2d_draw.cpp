@@ -102,9 +102,6 @@ void addAdaptiveGrid() {
 	
 	step.x = pow(10, round(log(1.0 / scale.x) / log(10))) * 100;
 	step.y = pow(10, round(log(1.0 / scale.y) / log(10))) * 100;
-	ImGui::Begin("Properties");
-	ImGui::Text("%f, %f",scale.x, step.x);
-	ImGui::End();
 
 	glm::vec2 boundary_min;
 	glm::vec2 boundary_max;

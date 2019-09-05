@@ -1,6 +1,81 @@
 {
-    "file": "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV",
-    "points": [
+    "animation": [
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ],
+                [
+                    20,
+                    20
+                ]
+            ]
+        ],
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ]
+            ]
+        ],
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ]
+            ]
+        ],
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ]
+            ]
+        ],
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ]
+            ]
+        ],
+        [
+            "keys",
+            [
+                [
+                    0,
+                    0
+                ]
+            ]
+        ]
+    ],
+    "deform": [
+        "factor",
+        1.0
+    ],
+    "extend": [
+        "length",
+        250
+    ],
+    "movie": [
+        "filename",
+        "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV"
+    ],
+    "plate": {
+        "height": 405,
+        "width": 720
+    },
+    "targetPoints": [
         [
             70,
             -140

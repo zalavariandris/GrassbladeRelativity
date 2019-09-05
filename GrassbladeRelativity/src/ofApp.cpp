@@ -6,7 +6,7 @@
 void ofApp::setup() {
 	/* imgui */
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.5;
+	ImGui::GetIO().FontGlobalScale = 1.0;
 	
 	/* OF */
 	ofDisableArbTex();
@@ -22,9 +22,18 @@ void ofApp::update() {
 
 void ofApp::draw() {
 	gui.begin();
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("StyleEditor"))
+		{
+			ImGui::ShowStyleEditor();
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
 
 	//showGrassblade();
-	//showViewerDemo();
 	showJsonExample();
+
 	gui.end();
 }

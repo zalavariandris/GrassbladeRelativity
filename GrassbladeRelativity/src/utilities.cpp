@@ -27,7 +27,7 @@ void Utils::ofSyncCameraToViewport(ofCamera & camera) {
 	camera.setGlobalPosition({ pos2D, 0 });
 }
 
-void Utils::ofDraw(Segment segment) {
+void Utils::ofDraw(Paper::Segment segment) {
 	ofSetColor(ofColor::grey);
 	ofDrawCircle(segment._point, 10);
 	ofDrawCircle(segment._point + segment._handleIn, 5);
@@ -37,7 +37,7 @@ void Utils::ofDraw(Segment segment) {
 	ofDrawLine(segment._point, segment._point + segment._handleOut);
 }
 
-void Utils::ofDraw(Curve curve) {
+void Utils::ofDraw(Paper::Curve curve) {
 	ofSetColor(ofColor::white);
 	auto segments{ 8 };
 	for (auto i = 0; i < segments; i++) {
@@ -50,7 +50,7 @@ void Utils::ofDraw(Curve curve) {
 	};
 }
 
-void Utils::ofDraw(Path path, bool verbose) {
+void Utils::ofDraw(Paper::Path path, bool verbose) {
 	auto segments{ 32 * path.getCurves().size() };
 	for (auto i = 0; i < segments; i++) {
 		double t1 = (double)i / segments;

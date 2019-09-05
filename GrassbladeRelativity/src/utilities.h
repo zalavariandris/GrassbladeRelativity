@@ -10,11 +10,11 @@
 namespace Utils{
 	void ofSyncCameraToViewport(ofCamera & camera);
 
-	void ofDraw(Segment segment);
+	void ofDraw(Paper::Segment segment);
 
-	void ofDraw(Curve curve);
+	void ofDraw(Paper::Curve curve);
 
-	void ofDraw(Path path, bool verbose = true);
+	void ofDraw(Paper::Path path, bool verbose = true);
 
 	void addTrajectory(Animation::AnimCurve const & x, Animation::AnimCurve const & y, int from, int to);
 }
