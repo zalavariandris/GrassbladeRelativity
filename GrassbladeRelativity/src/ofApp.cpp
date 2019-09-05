@@ -5,12 +5,12 @@
 #include "Reader.h"
 #include "utilities.h"
 #include "examples/grassblade.h"
-
+#include "examples/im2d_demos.h"
 // basic frameworks stuff
 void ofApp::setup() {
 	// imgui
 	gui.setup();
-	ImGui::GetIO().FontGlobalScale = 1.0;
+	ImGui::GetIO().FontGlobalScale = 1.5;
 	
 	//OF texture handling
 	ofDisableArbTex();
@@ -27,6 +27,8 @@ void ofApp::update() {
 
 void ofApp::draw() {
 	gui.begin();
+
 	showGrassblade();
+	//showViewerDemo();
 	gui.end();
 }

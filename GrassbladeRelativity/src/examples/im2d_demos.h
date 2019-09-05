@@ -1,5 +1,5 @@
 #pragma once
-#include "Im2D.h"
+#include "../Im2D/Im2D.h"
 
 void showViewerDemo() {
 	// show viewer options

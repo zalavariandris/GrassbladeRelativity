@@ -78,6 +78,28 @@ void addField(std::vector<glm::vec2> points, std::function<glm::vec2(glm::vec2)>
 	}
 }
 
+namespace Operators {
+	class Extend {
+		std::shared_ptr<Path> inputPath;
+		double length;
+		std::shared_ptr<Path> outputPath;
+
+		Extend(std::shared_ptr<Path> path, double length);
+
+		void evaluate() {
+
+		}
+		
+		void onSceneGui() {
+
+		}
+
+		void onPropertiesGui() {
+
+		}
+	};
+};
+
 void showGrassblade() {
 
 	/* TIME */
@@ -154,10 +176,11 @@ void showGrassblade() {
 	path1.add(std::make_shared<Segment>(lastLocation1._point + lastLocation1._tangent*length));
 
 	/* read the movie file */
-	auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";
-	//auto file = "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV";
+	//auto file = "C:/Users/andris/Desktop/grassfieldwind.mov";
+	auto file = "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV";
 	static Reader reader(file);
 	auto & currentImage = reader.getImageAtFrame(F);
+	currentImage.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
 
 	// draw OF
 	static ofCamera cam;

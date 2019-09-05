@@ -217,6 +217,7 @@ C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui;%
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGui.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
+    <ClInclude Include="libs\json.hpp" />
     <ClInclude Include="src\Animation\AnimCurve.h" />
     <ClInclude Include="src\examples\demos.h" />
     <ClInclude Include="src\examples\grassblade.h" />

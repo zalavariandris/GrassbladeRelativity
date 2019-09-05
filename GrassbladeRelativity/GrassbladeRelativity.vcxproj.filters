@@ -103,6 +103,7 @@
     <ClInclude Include="src\examples\paper_demo.h" />
     <ClInclude Include="src\examples\im2d_demos.h" />
     <ClInclude Include="src\examples\grassblade.h" />
+    <ClInclude Include="libs\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

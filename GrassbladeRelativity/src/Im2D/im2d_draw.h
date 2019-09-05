@@ -4,8 +4,8 @@
 
 // Draw
 
-ImVec2 toScreen(glm::vec2 P);
-glm::vec2 fromScreen(ImVec2 P);
+glm::vec2 toScreen(glm::vec2 P);
+glm::vec2 fromScreen(glm::vec2 P);
 
 void addPoint(glm::vec2 P, ImColor color = ImColor(256, 256, 256), float r = 8);
 
