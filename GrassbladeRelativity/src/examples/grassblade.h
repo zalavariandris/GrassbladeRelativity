@@ -1,6 +1,7 @@
 #pragma once
 #include "../Widgets/Widgets.hpp"
 #include "../Im2D/Im2D.h"
+#include "../Im2D/im2d_draw.h"
 #include "../Paper/Path.h"
 #include "../utilities.h"
 #include "glm/ext.hpp"

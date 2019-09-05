@@ -1,7 +1,9 @@
 #pragma once
 #include "glm/glm.hpp"
-#include "Curve.h"
 #include "Segment.h"
+#include "Curve.h"
+#include "CurveLocation.h"
+
 #include <vector>
 #include <memory> // enable shared from this
 

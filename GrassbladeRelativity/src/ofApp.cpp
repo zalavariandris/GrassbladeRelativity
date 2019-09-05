@@ -1,23 +1,18 @@
 #include "ofApp.h"
-#include "Paper/numerical.h"
-#include "Im2DPaper/Im2DPaper.h"
-#include "imgui_internal.h"
-#include "Reader.h"
-#include "utilities.h"
-#include "examples/grassblade.h"
-#include "examples/im2d_demos.h"
-// basic frameworks stuff
+//#include "examples/grassblade.h"
+//#include "examples/im2d_demos.h"
+#include "examples/json_example.h"
+
 void ofApp::setup() {
-	// imgui
+	/* imgui */
 	gui.setup();
 	ImGui::GetIO().FontGlobalScale = 1.5;
 	
-	//OF texture handling
+	/* OF */
 	ofDisableArbTex();
 	//ofEnableNormalizedTexCoords(); // needless with disabled ARB textures, but left it here for clarity.
 	ofSetVerticalSync(true);
 	ofSetBackgroundColor(ofColor(10, 10, 10));
-
 	//ofToggleFullscreen();
 }
 
@@ -28,7 +23,8 @@ void ofApp::update() {
 void ofApp::draw() {
 	gui.begin();
 
-	showGrassblade();
+	//showGrassblade();
 	//showViewerDemo();
+	showJsonExample();
 	gui.end();
 }
