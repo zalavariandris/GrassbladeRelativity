@@ -1,92 +1,33 @@
 {
-    "animation": [
+  "animation": {
+    "Ax": {
+      "keys": [
         [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ],
-                [
-                    20,
-                    20
-                ]
-            ]
+          0,
+          0
         ],
         [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ]
-            ]
-        ],
-        [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ]
-            ]
-        ],
-        [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ]
-            ]
-        ],
-        [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ]
-            ]
-        ],
-        [
-            "keys",
-            [
-                [
-                    0,
-                    0
-                ]
-            ]
+          100,
+          -500
         ]
+      ]
+    }
+  },
+  "movie": {
+    "filename": "C:/Users/andris/Desktop/grassfieldwind.mov"
+  },
+  "targetPoints": [
+    [
+      70,
+      -140
     ],
-    "deform": [
-        "factor",
-        1.0
+    [
+      30,
+      -30
     ],
-    "extend": [
-        "length",
-        250
-    ],
-    "movie": [
-        "filename",
-        "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV"
-    ],
-    "plate": {
-        "height": 405,
-        "width": 720
-    },
-    "targetPoints": [
-        [
-            70,
-            -140
-        ],
-        [
-            30,
-            -30
-        ],
-        [
-            20,
-            125
-        ]
+    [
+      20,
+      125
     ]
+  ]
 }

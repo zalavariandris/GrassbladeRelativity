@@ -36,6 +36,7 @@
     <ClCompile Include="src\Reader.cpp" />
     <ClCompile Include="src\utilities.cpp" />
     <ClCompile Include="src\Widgets\Widgets.cpp" />
+    <ClCompile Include="src\examples\grassblade.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

@@ -1,7 +1,7 @@
 #include "ofApp.h"
-//#include "examples/grassblade.h"
+#include "examples/grassblade.h"
 //#include "examples/im2d_demos.h"
-#include "examples/json_example.h"
+//#include "examples/json_example.h"
 
 void ofApp::setup() {
 	/* imgui */
@@ -32,8 +32,8 @@ void ofApp::draw() {
 		ImGui::EndMainMenuBar();
 	}
 
-	//showGrassblade();
-	showJsonExample();
+	showGrassblade();
+	//showJsonExample();
 
 	gui.end();
 }

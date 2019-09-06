@@ -7,6 +7,7 @@ namespace Animation {
 		bool selected{ false };
 		int frame;
 		double value;
+		Key(): frame(0), value(0){};
 		Key(int frame, double value) :frame(frame), value(value) {};
 	};
 

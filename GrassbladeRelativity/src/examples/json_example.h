@@ -47,16 +47,54 @@ namespace ns {
 	}
 } // namespace ns
 
-void showJsonExample() {
-	ns::person p = { "Ned Flanders", "744 Evergreen Terrace", 60 };
-	std::vector<glm::vec2> points{ { 70, -140 }, { 30, -30 }, { 20, 125 } };
-	json j;
-	j["file"] = { "file", "C:/Users/andris/Pictures/2019-08/IMG_6926.MOV" };
-	j["person"] = p;
 
-	//auto j3 = nlohmann::json::parse("");
+//namespace glm {
+//	void to_json(json& j, const glm::vec2& P) {
+//		j = json::object({ {"x", P.x}, {"y", P.y} });
+//	}
+//
+//	void from_json(const json& j, glm::vec2& P) {
+//		P.x = j.at("x").get<double>();
+//		P.y = j.at("y").get<double>();
+//	}
+//}
+
+namespace Geo {
+	struct Point {
+		double x;
+		double y;
+		Point(double x, double y) : x(x), y(y) {};
+	};
+
+	void to_json(json& j, const Point& P) {
+		j = { { "x", P.x }, { "y", P.y } };
+	};
+
+	void from_json(const json& j, Point& P) {
+		P.x = j.at("x").get<double>();
+		P.y = j.at("y").get<double>();
+	}
+
+}
+
+namespace glm {
+	void to_json(json& j, const glm::vec2& P) {
+		j = { { "x", P.x }, { "y", P.y } };
+	};
+
+	void from_json(const json& j, glm::vec2& P) {
+		P.x = j.at("x").get<double>();
+		P.y = j.at("y").get<double>();
+	}
+
+}
+
+
+void showJsonExample() {
+
+	json j;
+	std::vector<Geo::Point> points{ { 70, -140}, {30, -30}, {20, 125} };
+	j["points"] = points;
 
 	std::cout << j.dump() << std::endl;
-
-	//write(j, "json_test.json");
 }
