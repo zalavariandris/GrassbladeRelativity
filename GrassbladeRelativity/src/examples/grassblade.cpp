@@ -151,7 +151,8 @@ namespace Operators {
 }
 
 namespace deserialize {
-	std::vector<glm::vec2> points(json const & j) {
+	std::vector<glm::vec2> points(json const & j)
+	{
 		std::vector<glm::vec2> points(j.size());
 		for (auto i = 0; i < j.size(); i++) {
 			double x = j[i][0].get<double>();
@@ -164,7 +165,8 @@ namespace deserialize {
 
 namespace serialize {
 	json points(std::vector<glm::vec2> points) {
-		json j;
+		json j = {};
+		cout << "!!!! " << j << endl;
 		for (auto i = 0; i < points.size(); i++) {
 			double x = points[i].x;
 			double y = points[i].y;
@@ -188,28 +190,139 @@ namespace Animation {
 
 
 Grassblade::Grassblade() {
+	// default values
+	filepath = ofToDataPath("projects/grassblade.json");
 
+	// create plate
+	static float plateWidth{ 1920 }, plateHeight{ 1080 };
+	static int plateColumns{ 10 }, plateRows{ 10 };
+	plate.set(plateWidth, plateHeight, plateColumns, plateRows);
+	plate.mapTexCoords(0, 1, 1, 0);
+	for (auto & vertex : plate.getMesh().getVertices()) {
+		vertex.x += plateWidth / 2;
+		vertex.y += plateHeight / 2;
+	}
+
+	plateMesh = ofMesh(plate.getMesh());
+
+	ImGui::Begin("Properties");
+	if (ImGui::CollapsingHeader("create plate", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::DragFloat("width", &plateWidth);
+		ImGui::DragFloat("height", &plateHeight);
+		ImGui::DragInt("columns", &plateColumns);
+		ImGui::DragInt("rows", &plateRows);
+	}
+	ImGui::End();
+
+	//
+	open();
 };
 
-void Grassblade::show() {
+void Grassblade::open() {
+	// handle file does not exist, or failed to open
+	// read json from file
+	ofFile file;
+	if (!file.open(filepath)) {
+		cout << "cannot open file" << endl;
+	}
 
-};
-
-Grassblade::~Grassblade() {
-
-};
-
-
-json open(std::string const & filename) {
-
-	// read file to json
-	std::ifstream i(filename);
+	//}
 	json j;
-	i >> j;
-	return j;
+	file >> j;
+	file.close();
+
+	//cout << "load file: " << filepath << endl;
+	//cout << j.dump() << endl;
+
+	// load json to application
+	P1 = deserialize::points(j["targetPoints"]); // j["targetPoints"].get<std::vector<glm::vec2>>(); // TODO: load directly from json
+	Ax.setKeys({ j["animation"]["Ax"]["keys"].get<std::vector<Animation::Key>>()});
+	Ax.label = "Ax";
+	Ay.setKeys( { Animation::Key(0,-140) } );
+	Ay.label = "Ay";
+	Bx.setKeys({ Animation::Key(0,0) });
+	By.label = "Bx";
+	By.setKeys({ Animation::Key(0,-30) });
+	By.label = "By";
+	Cx.setKeys({ Animation::Key(0,0) });
+	Cx.label = "Cx";
+	Cy.setKeys({ Animation::Key(0,125) });
+	Cy.label = "Cy";
+	moviefile = j["movie"]["filename"].get<std::string>();
 }
 
-void showGrassblade() {
+void Grassblade::save() {
+	json j;
+	j["targetPoints"] = serialize::points(P1);
+	j["animation"]["Ax"]["keys"] = Ax.getKeys();
+	j["movie"]["filename"] = moviefile;
+
+	std::ofstream o("bin/data/projects/grassblade.json");
+	o << std::setw(2) << j.dump() << std::endl;
+	o.close();
+	cout << "save:" << endl << j.dump() << endl;
+}
+
+void Grassblade::pasteKeyframesFromAE() {
+
+	std::vector<Animation::AnimCurve> curves;
+
+	std::string filename{ ("projects/aeKeyframesData.txt") };
+	std::string line;
+	ifstream f(ofToDataPath(filename));
+	if (!f.is_open()) {
+		cout << "error while opening file" << endl;
+		return;
+	}
+
+	// Process title
+	// skip to metadatablock block
+	while (std::getline(f, line) && line != "") {}
+
+	/* Process keyframes data */
+	// skip to first keyframes block
+	while (std::getline(f, line) && line != "") {}
+
+	int currentBlock = 0;
+	while (currentBlock < 3) {
+		// process block header (simply step through)
+		std::getline(f, line);
+
+		// Process csv heading (simply step throuh)
+		std::getline(f, line);
+
+		// process csv rows one by one
+		cout << "load keyframes" << endl;
+		curves.push_back(Animation::AnimCurve());
+		curves.push_back(Animation::AnimCurve());
+		while (std::getline(f, line) && line != "") {
+			std::string cell;
+			std::stringstream linestream(line);
+			int frame;
+			float x, y;
+			linestream >> frame >> x >> y;
+			cout << "line: " << line << endl;
+			cout << "  Key: " << frame << ", " << x << ", " << y << endl;
+			curves[currentBlock*2].setValueAtFrame(x, frame);
+			curves[currentBlock*2+1].setValueAtFrame(y, frame);
+		}
+		currentBlock++;
+	}
+
+	if (f.bad()) {
+		cout << "error while reading file" << endl;
+		return;
+	}
+
+	// if everythin went fine, set the curves
+	std::vector<Animation::AnimCurve*> targetCurves{ &Ax, &Ay, &Bx, &By, &Cx, &Cy };
+	for (auto i = 0; i < currentBlock; i++) {
+		*targetCurves[i*2+0] = curves[i * 2 + 0];
+		*targetCurves[i * 2 + 1] = curves[i * 2 + 1];
+	}
+}
+
+void Grassblade::draw() {
 	/* -----------------------------------
 	   TIME
 	   -----------------------------------*/
@@ -223,35 +336,13 @@ void showGrassblade() {
 	if (play && F > end)
 		F = begin;
 
-	/*
-	 * LOAD FROM FILE
-	 */
-	static json j = open("bin/data/projects/grassblade.json");
-
-
-	static std::vector<glm::vec2> P1 = deserialize::points(j["targetPoints"]); // j["targetPoints"].get<std::vector<glm::vec2>>(); // TODO: load directly from json
-	static Animation::AnimCurve Ax{j["animation"]["Ax"]["keys"].get<std::vector<Animation::Key>>(),"Ax" };
-	//static Animation::AnimCurve Ax{ { Animation::Key(0,0) } ,"Ax" };
-	static Animation::AnimCurve // TODO: Load all keys from file
-		Ay{ { Animation::Key(0,-140) } ,"Ay" },
-		Bx{ { Animation::Key(0,0)} ,"Bx" },
-		By{ { Animation::Key(0,-30)} ,"By" },
-		Cx{ { Animation::Key(0,0)} ,"Cx" },
-		Cy{ { Animation::Key(0,125)} ,"Cy" };
-
-	static std::string file = j["movie"]["filename"].get<std::string>();
-
 	// save json to file
 	ImGui::Begin("Properties");
 	if (ImGui::Button("save")) {
-		j["targetPoints"] = serialize::points(P1);
-		j["animation"]["Ax"]["keys"] = Ax.getKeys();
-		j["movie"]["filename"] = file;
-
-		std::ofstream o("bin/data/projects/grassblade.json");
-		o << std::setw(2) << j.dump() << std::endl;
-		o.close();
-		cout << "save:" << endl << j.dump() << endl;
+		save();
+	}
+	if (ImGui::Button("pasteKeyframesFromAE")) {
+		pasteKeyframesFromAE();
 	}
 	ImGui::End();
 
@@ -377,6 +468,7 @@ void showGrassblade() {
 	ImGui::Begin("GraphEditor");
 	std::vector<Animation::AnimCurve*> curves = { &Ax, &Ay, &Bx, &By, &Cx, &Cy };
 	Widgets::GraphEditor("GraphEditor", curves, &F);
+
 	// handle shortcuts
 	if (ImGui::IsKeyPressed(83/*s*/)) {
 		for (Animation::AnimCurve * animCurve : curves) {
@@ -409,7 +501,7 @@ void showGrassblade() {
 	/* -----------------------------------
 	   Read movie
 	   -----------------------------------*/
-	static Reader reader(file);
+	static Reader reader(moviefile);
 	auto & currentImage = reader.getImageAtFrame(F);
 	currentImage.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
 
@@ -432,25 +524,6 @@ void showGrassblade() {
 	//	Im2D::ViewerEnd();
 	//	ImGui::End();
 	//}
-
-	/* -----------------------------------
-	   Create Plate
-	   -----------------------------------*/
-
-	static ofPlanePrimitive plate; //TODO: load from file
-	static float plateWidth{ 720 }, plateHeight{ 405 };
-	static int plateColumns{ 10 }, plateRows{ 10 };
-	plate.set(plateWidth, plateHeight, plateColumns, plateRows);
-	plate.mapTexCoords(0, 1, 1, 0);
-
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create plate", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::DragFloat("width", &plateWidth);
-		ImGui::DragFloat("height", &plateHeight);
-		ImGui::DragInt("columns", &plateColumns);
-		ImGui::DragInt("rows", &plateRows);
-	}
-	ImGui::End();
 
 	// draw plate
 	//{
@@ -505,7 +578,6 @@ void showGrassblade() {
 	ImGui::Begin("Properties");
 	if (ImGui::CollapsingHeader("Deform", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::SliderFloat("deform", &deform, 0, 1.0);
-
 	}
 	ImGui::End();
 
@@ -519,12 +591,12 @@ void showGrassblade() {
 	ImGui::End();
 
 	if (deform > 0) {
-		auto mesh = plate.getMeshPtr();
-		for (auto i = 0; i < mesh->getVertices().size(); i++) {
-			glm::vec2 P0 = mesh->getVertex(i);
+		auto & mesh = plate.getMesh();
+		for (auto i = 0; i < mesh.getVertices().size(); i++) {
+			glm::vec2 P0 = plateMesh.getVertex(i);
 			auto P1 = Field::pathToPath(path0, path1, P0);
 			if (!isnan(P1.x) && !isnan(P1.y)) {
-				mesh->setVertex(i, glm::vec3(lerp(P0, P1, deform), 0));
+				mesh.setVertex(i, glm::vec3(lerp(P0, P1, deform), 0));
 			}
 		}
 	}
@@ -541,6 +613,14 @@ void showGrassblade() {
 	Utils::ofDraw(path0);
 	Utils::ofDraw(path1);
 	cam.end();
+};
 
-	//save("grassblade.json");
+Grassblade::~Grassblade() {
+
+};
+
+void showGrassblade() {
+	static Grassblade grass;
+	grass.draw();
+	
 }
