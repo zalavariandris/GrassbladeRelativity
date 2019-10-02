@@ -81,7 +81,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <LanguageStandard>
       </LanguageStandard>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>

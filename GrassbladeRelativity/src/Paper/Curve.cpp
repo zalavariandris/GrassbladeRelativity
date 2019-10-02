@@ -87,6 +87,10 @@ namespace Paper {
 					y /= len;
 				}
 			}
+			if (tangent != nullptr) {
+				tangent->x = x;
+				tangent->y = y;
+			}
 			if (curvature!=nullptr) {
 				// Calculate 2nd derivative, and curvature from there:
 				// http://cagd.cs.byu.edu/~557/text/ch2.pdf page#31
@@ -261,30 +265,81 @@ namespace Paper {
 	}
 
 	glm::vec2 Curve::getPointAtTime(double t) const {
-		glm::vec2 point;
-		if (!evaluate2(getValues(), t, &point))
+		// Do not produce results if parameter is out of range or invalid.
+		if (isnan(t) || t < 0 || t > 1)
 			return glm::vec2(NAN);
-		return point;
+
+		auto v = getValues();
+
+		double x0 = v[0]; double y0 = v[1];
+		double x1 = v[2]; double y1 = v[3];
+		double x2 = v[4]; double y2 = v[5];
+		double x3 = v[6]; double y3 = v[7];
+
+		// If the curve handles are almost zero, reset the control points to the
+		// anchors.
+		if (Numerical::isZero(x1 - x0) && Numerical::isZero(y1 - y0)) {
+			x1 = x0;
+			y1 = y0;
+		}
+		if (Numerical::isZero(x2 - x3) && Numerical::isZero(y2 - y3)) {
+			x2 = x3;
+			y2 = y3;
+		}
+
+		// Calculate the polynomial coefficients.
+		double cx = 3 * (x1 - x0);
+		double bx = 3 * (x2 - x1) - cx;
+		double ax = x3 - x0 - cx - bx;
+		double cy = 3 * (y1 - y0);
+		double by = 3 * (y2 - y1) - cy;
+		double ay = y3 - y0 - cy - by;
+
+		// type === 0: getPoint()
+		// Calculate the curve point at parameter value t
+		// Use special handling at t === 0 / 1, to avoid imprecisions.
+		// See #960
+		return glm::vec2(
+			t == 0 ? x0 : t == 1 ? x3
+			: ((ax * t + bx) * t + cx) * t + x0,
+			t == 0 ? y0 : t == 1 ? y3
+			: ((ay * t + by) * t + cy) * t + y0
+		);
 	};
 
 	glm::vec2 Curve::getTangentAtTime(double t) const {
-		return evaluate(getValues(), t, 1, true);
+		glm::vec2 tangent;
+		if (!evaluate2(getValues(), t, nullptr, true, &tangent))
+			return glm::vec2(NAN);
+		return tangent;
 	};
 
 	glm::vec2 Curve::getWeightedTangentAtTime(double t) const {
-		return evaluate(getValues(), t, 1, false);
+		glm::vec2 tangent;
+		if (!evaluate2(getValues(), t, nullptr, false, &tangent))
+			return glm::vec2(NAN);
+		return tangent;
 	};
 
 	glm::vec2 Curve::getNormalAtTime(double t) const {
-		return evaluate(getValues(), t, 2, true);
+		glm::vec2 normal;
+		if (!evaluate2(getValues(), t, nullptr, true, nullptr, &normal))
+			return glm::vec2(NAN);
+		return normal;
 	};
 
 	glm::vec2 Curve::getWeightedNormalAtTime(double t) const {
-		return evaluate(getValues(), t, 2, false);
+		glm::vec2 normal;
+		if (!evaluate2(getValues(), t, nullptr, false, nullptr, &normal))
+			return glm::vec2(NAN);
+		return normal;
 	};
 
 	double Curve::getCurvatureAtTime(double t) const {
-		return evaluate(getValues(), t, 3, false).x;
+		double curvature;
+		if (!evaluate2(getValues(), t, nullptr, true, nullptr, nullptr, &curvature))
+			return NAN;
+		return curvature;
 	};
 
 	double Curve::getNearestTime(glm::vec2 point) const {
@@ -342,11 +397,11 @@ namespace Paper {
 	}
 
 	std::function<double(double)> Curve::getLengthIntegrand() const {
-		auto v = getValues();
-		double x0 = v[0]; double y0 = v[1];
-		double x1 = v[2]; double y1 = v[3];
-		double x2 = v[4]; double y2 = v[5];
-		double x3 = v[6]; double y3 = v[7];
+		auto & v = getValues();
+		const double x0 = v[0]; const double y0 = v[1];
+		const double x1 = v[2]; const double y1 = v[3];
+		const double x2 = v[4]; const double y2 = v[5];
+		const double x3 = v[6]; const double y3 = v[7];
 
 		// Calculate the coefficients of a Bezier derivative.
 		double ax = 9 * (x1 - x2) + 3 * (x3 - x0);
@@ -387,7 +442,7 @@ namespace Paper {
 			}
 
 			// The length of straight curves can be calculated more easily.
-			auto v = getValues();
+			auto & v = getValues();
 			auto dx = v[6] - v[0]; // x3 - x0
 			auto dy = v[7] - v[1]; // y3 - y0
 			return sqrt(dx * dx + dy * dy);
@@ -413,7 +468,7 @@ namespace Paper {
 	}
 
 	double Curve::getTimeOf(glm::vec2 point) const {
-		auto v = getValues();
+		auto & v = getValues();
 		// Before solving cubics, compare the beginning and end of the curve
 		// with zero epsilon:
 		glm::vec2 p0{ v[0], v[1] };
@@ -521,19 +576,19 @@ namespace Paper {
 			/*#=*/Numerical::EPSILON);
 	}
 
-	std::array<double, 8> Curve::getValues() const {
-		glm::vec2 p1 = _segment1->_point;
-		glm::vec2 h1 = _segment1->_handleOut;
-		glm::vec2 h2 = _segment2->_handleIn;
-		glm::vec2 p2 = _segment2->_point;
-		double x1 = p1.x; double y1 = p1.y;
-		double x2 = p2.x; double y2 = p2.y;
+	const std::array<double, 8> Curve::getValues() const {
+		const glm::vec2 & p1 = _segment1->_point;
+		const glm::vec2 & h1 = _segment1->_handleOut;
+		const glm::vec2 & h2 = _segment2->_handleIn;
+		const glm::vec2 & p2 = _segment2->_point;
+		//double x1 = p1.x; double y1 = p1.y;
+		//double x2 = p2.x; double y2 = p2.y;
 
 		return {
-			x1, y1,
-			x1 + h1.x, y1 + h1.y,
-			x2 + h2.x, y2 + h2.y,
-			x2, y2
+			p1.x, p1.y,
+			p1.x + h1.x, p1.y + h1.y,
+			p2.x + h2.x, p2.y + h2.y,
+			p2.x, p2.y
 		};
 	}
 

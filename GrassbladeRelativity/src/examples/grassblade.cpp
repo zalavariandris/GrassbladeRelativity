@@ -32,8 +32,8 @@ Grassblade::Grassblade() {
 
 	plateMesh = ofMesh(plate.getMesh());
 
-	distortionTexture.allocate(300, 300, GL_RGBA32F);
-	renderFbo.allocate(300, 300, GL_RGBA32F);
+	distortionTexture.allocate(1920, 1080, GL_RGBA32F);
+	renderFbo.allocate(1920, 1080, GL_RGBA32F);
 
 
 	// paths

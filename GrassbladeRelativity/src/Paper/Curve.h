@@ -38,11 +38,6 @@ namespace Paper {
 		Curve() :_segment1(std::make_shared<Segment>()), _segment2(std::make_shared<Segment>()) {};
 		Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2) : _segment1(segment1), _segment2(segment2) {};
 
-		/* Undocumented internal constructor, used by Path#getCurves()
-		 * new Segment(path, segment1, segment2); */
-		 //TODO: weak reference to path
-		 //Curve(std::weak_ptr<Path> path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2): _path(path), _segment1(segment1), _segment2(segment2) {};
-
 		 /*
 		  * member functions
 		  */
@@ -57,7 +52,7 @@ namespace Paper {
 
 		Line getLine() const;
 
-		std::array<double, 8> getValues() const; //TODO: !!! is this public?
+		const std::array<double, 8> getValues() const; //TODO: !!! is this public?
 
 		glm::vec2 getPointAtTime(double t) const;
 
