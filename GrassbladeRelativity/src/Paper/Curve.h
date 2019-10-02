@@ -6,6 +6,7 @@
 #include <memory> //shared_ptr, unique_ptr, weak_ptr
 #include <vector>
 #include "Segment.h"
+#include "basic/Line.h"
 namespace Paper {
 	class Path;
 	class CurveLocation;
@@ -22,8 +23,10 @@ namespace Paper {
 		/*
 		 *static functions
 		 */
-		static glm::vec2 evaluate(std::array<double, 8>, double t, int type, bool normalized);
-		static double solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
+		static glm::vec2 evaluate(std::array<double, 8> const & v, double t, int type, bool normalized);
+		static bool evaluate2(std::array<double, 8> const & v, double t, glm::vec2 * point = nullptr, bool normalized = true, glm::vec2 * tangent = nullptr, glm::vec2 * normal = nullptr, double * curvature = nullptr);
+		static int solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
+		static bool isStraight(glm::vec2 const & p1, glm::vec2 const & h1, glm::vec2 const & h2, glm::vec2 const & p2);
 
 		/*
 		 * private memnbers
@@ -43,6 +46,17 @@ namespace Paper {
 		 /*
 		  * member functions
 		  */
+
+		bool isStraight() const;
+
+		bool hasHandles() const;
+
+		bool isLinear() const;
+
+		bool isCollinear(Curve const & curve) const;
+
+		Line getLine() const;
+
 		std::array<double, 8> getValues() const; //TODO: !!! is this public?
 
 		glm::vec2 getPointAtTime(double t) const;

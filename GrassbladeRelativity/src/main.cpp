@@ -1,7 +1,6 @@
 #include "ofMain.h"
 #include "ofApp.h"
 
-//========================================================================
 int main( ){
 	ofGLFWWindowSettings settings;
 	settings.setGLVersion(4, 1); //we define the OpenGL version we want to use

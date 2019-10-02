@@ -81,6 +81,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <LanguageStandard>
       </LanguageStandard>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -108,7 +109,12 @@
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
+    <ClCompile Include="src\Paper\basic\Line.cpp" />
+    <ClCompile Include="src\Animation\AnimCurve.cpp" />
+    <ClCompile Include="src\Animation\Translators\AEAnimationData.cpp" />
+    <ClCompile Include="src\Animation\Translators\MayaAnim.cpp" />
     <ClCompile Include="src\examples\grassblade.cpp" />
+    <ClCompile Include="src\Paper\basic\Point.cpp" />
     <ClCompile Include="src\Reader.cpp" />
     <ClCompile Include="src\Paper\CurveLocation.cpp" />
     <ClCompile Include="src\Paper\Path.cpp" />
@@ -139,6 +145,11 @@
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
     <ClInclude Include="json.hpp" />
+    <ClInclude Include="src\examples\grassblade_utilities.h" />
+    <ClInclude Include="src\Paper\basic\Point.h" />
+    <ClInclude Include="src\Paper\basic\Line.h" />
+    <ClInclude Include="src\Animation\Translators\AEAnimationData.h" />
+    <ClInclude Include="src\Animation\Translators\MayaAnim.h" />
     <ClInclude Include="src\Animation\AnimCurve.h" />
     <ClInclude Include="src\examples\demos.h" />
     <ClInclude Include="src\examples\grassblade.h" />
@@ -172,7 +183,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="bin\data\shadersGL3\distortShader.frag" />
     <None Include="src\Paper\README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="bin\data\shadersGL3\distortShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ProjectExtensions>

@@ -5,7 +5,7 @@
 #include "../Paper/Path.h"
 #include "../utilities.h"
 #include "glm/ext.hpp"
-#include "../Reader.h"
+
 
 #include "ofAppRunner.h"
 #include "ofMain.h"
@@ -13,460 +13,196 @@
 
 #include "grassblade.h"
 
-using json = nlohmann::json;
+#include "../Animation/Translators/AEAnimationData.h"
+#include "../Animation/Translators/MayaAnim.h"
+#include "grassblade_utilities.h"
 
-namespace Field {
-	glm::vec2 curveToRect(Paper::Curve const & curve, glm::vec2 uv) {
-		double distance = uv.x;
-		double t = uv.y;
-
-		glm::vec2 P = curve.getPointAtTime(t);
-		glm::vec2 normal = curve.getNormalAtTime(t);
-
-		glm::vec2 xy = P + normal * distance;
-		return xy;
-	}
-
-	glm::vec2 pathToRect(Paper::Path const & path, glm::vec2 uv) {
-		double distance = uv.x;
-		double t = uv.y;
-
-		Paper::CurveLocation loc = path.getLocationAtTime(t);
-		glm::vec2 P = loc._point;
-		glm::vec2 normal = loc._normal;
-
-		glm::vec2 xy = P + normal * distance;
-		return xy;
-	}
-
-	glm::vec2 rectToCurve(Paper::Curve const & curve, glm::vec2 xy) {
-		double t = curve.getNearestTime(xy);
-		auto Q = curve.getPointAtTime(t);
-		double distance = glm::distance(xy, Q);
-
-		glm::vec2 P = curve.getPointAtTime(t);
-		glm::vec2 normal = curve.getNormalAtTime(t);
-
-		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
-		glm::vec2 uv(dot > 0 ? distance : -distance, t);
-		return uv;
-	}
-
-	glm::vec2 rectToPath(Paper::Path const & path, glm::vec2 xy) {
-		double t = path.getNearestTime(xy);
-		auto Q = path.getPointAtTime(t);
-		double distance = glm::distance(xy, Q);
-
-		glm::vec2 P = path.getPointAtTime(t);
-		glm::vec2 normal = path.getNormalAtTime(t);
-
-		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
-		glm::vec2 uv(dot > 0 ? distance : -distance, t);
-		return uv;
-	}
-
-	glm::vec2 pathToPath(Paper::Path const & source, Paper::Path const & target, glm::vec2 P0) {
-		glm::vec2 uv = Field::rectToPath(source, P0);
-		glm::vec2 P1 = Field::pathToRect(target, uv);
-		return P1;
-	}
-}
-
-namespace Operators {
-	class Extend {
-		std::shared_ptr<Paper::Path> inputPath;
-		double length;
-		std::shared_ptr<Paper::Path> outputPath;
-
-		Extend(std::shared_ptr<Paper::Path> path, double length);
-
-		void evaluate() {
-
-		}
-
-		void onSceneGui() {
-
-		}
-
-		void onPropertiesGui() {
-
-		}
-	};
-};
-
-namespace {
-	bool DragVec2(const char * label, glm::vec2 * P) {
-		float v[2]{ P->x, P->y };
-		if (ImGui::DragFloat2(label, v)) {
-			P->x = v[0]; P->y = v[1];
-			return true;
-		}
-		return false;
-	}
-
-	void addField(std::vector<glm::vec2> points, std::function<glm::vec2(glm::vec2)> field) {
-		for (auto P : points) {
-			addArrow(P, field(P), ImColor(255, 50, 255, 180));
-		}
-	}
-
-	//glm::vec2 lerp(glm::vec2 a, glm::vec2 b, glm::vec2 t) {
-	//	return a + t * (b - a);
-	//};
-}
-
-/* Serialization helpers*/
-namespace Operators {
-	class PathThroughPoints {
-	private:
-		Paper::Path m_path;
-	public:
-		PathThroughPoints(std::vector<glm::vec2> points) {
-			m_path.add({
-				std::make_shared<Paper::Segment>(points[0]),
-				std::make_shared<Paper::Segment>(points[1], (points[0] - points[2])*0.25, (points[2] - points[0])*0.25),
-				std::make_shared<Paper::Segment>(points[2])
-				});
-		}
-
-		PathThroughPoints & gui() {
-			// gui
-			ImGui::Begin("Properties");
-			if (ImGui::CollapsingHeader("PathThroughPoints", ImGuiTreeNodeFlags_DefaultOpen)) {
-				ImGui::Text("smooth path from points");
-			}
-			ImGui::End();
-			return *this;
-		}
-
-		PathThroughPoints &  draw() {
-			Utils::ofDraw(m_path);
-			return *this;
-		}
-
-		Paper::Path & get() {
-			return m_path;
-		}
-	};
-}
-
-namespace deserialize {
-	std::vector<glm::vec2> points(json const & j)
-	{
-		std::vector<glm::vec2> points(j.size());
-		for (auto i = 0; i < j.size(); i++) {
-			double x = j[i][0].get<double>();
-			double y = j[i][1].get<double>();
-			points[i] = glm::vec2(x, y);
-		}
-		return points;
-	}
-}
-
-namespace serialize {
-	json points(std::vector<glm::vec2> points) {
-		json j = {};
-		cout << "!!!! " << j << endl;
-		for (auto i = 0; i < points.size(); i++) {
-			double x = points[i].x;
-			double y = points[i].y;
-			j.push_back({x, y});
-		}
-		return j;
-	}
-}
-
-namespace Animation {
-	void to_json(json& j, const Key& key) {
-		j = { key.frame ,  key.value };
-	};
-
-	void from_json(const json& j, Key& key) {
-		key.frame = j.at(0).get<double>();
-		key.value = j.at(1).get<double>();
-	}
-}
-
-
+#include <future>
 
 Grassblade::Grassblade() {
-	// default values
-	filepath = ofToDataPath("projects/grassblade.json");
-
 	// create plate
 	static float plateWidth{ 1920 }, plateHeight{ 1080 };
 	static int plateColumns{ 10 }, plateRows{ 10 };
 	plate.set(plateWidth, plateHeight, plateColumns, plateRows);
 	plate.mapTexCoords(0, 1, 1, 0);
-	for (auto & vertex : plate.getMesh().getVertices()) {
-		vertex.x += plateWidth / 2;
-		vertex.y += plateHeight / 2;
-	}
+	//for (auto & vertex : plate.getMesh().getVertices()) {
+	//	vertex.x += plateWidth / 2;
+	//	vertex.y += plateHeight / 2;
+	//}
 
 	plateMesh = ofMesh(plate.getMesh());
 
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create plate", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::DragFloat("width", &plateWidth);
-		ImGui::DragFloat("height", &plateHeight);
-		ImGui::DragInt("columns", &plateColumns);
-		ImGui::DragInt("rows", &plateRows);
-	}
-	ImGui::End();
+	distortionTexture.allocate(300, 300, GL_RGBA32F);
+	renderFbo.allocate(300, 300, GL_RGBA32F);
+
+
+	// paths
+	sourcePath = Paper::Path({
+		std::make_shared<Paper::Segment>(glm::vec2(0,0)),
+		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,-50), glm::vec2(0,0))
+	});
+
+	targetPath = Paper::Path({
+		std::make_shared<Paper::Segment>(glm::vec2(0,0)),
+		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,-50), glm::vec2(0,0))
+	});
 
 	//
 	open();
+	reader = Reader(moviefile);
 };
-
-void Grassblade::open() {
-	// handle file does not exist, or failed to open
-	// read json from file
-	ofFile file;
-	if (!file.open(filepath)) {
-		cout << "cannot open file" << endl;
-	}
-
-	//}
-	json j;
-	file >> j;
-	file.close();
-
-	//cout << "load file: " << filepath << endl;
-	//cout << j.dump() << endl;
-
-	// load json to application
-	P1 = deserialize::points(j["targetPoints"]); // j["targetPoints"].get<std::vector<glm::vec2>>(); // TODO: load directly from json
-	Ax.setKeys({ j["animation"]["Ax"]["keys"].get<std::vector<Animation::Key>>()});
-	Ax.label = "Ax";
-	Ay.setKeys( { Animation::Key(0,-140) } );
-	Ay.label = "Ay";
-	Bx.setKeys({ Animation::Key(0,0) });
-	By.label = "Bx";
-	By.setKeys({ Animation::Key(0,-30) });
-	By.label = "By";
-	Cx.setKeys({ Animation::Key(0,0) });
-	Cx.label = "Cx";
-	Cy.setKeys({ Animation::Key(0,125) });
-	Cy.label = "Cy";
-	moviefile = j["movie"]["filename"].get<std::string>();
-}
 
 void Grassblade::save() {
 	json j;
-	j["targetPoints"] = serialize::points(P1);
-	j["animation"]["Ax"]["keys"] = Ax.getKeys();
+	j["startTime"] = startTime;
+	j["endTime"] = endTime;
 	j["movie"]["filename"] = moviefile;
+	j["deformFactor"] = deformFactor;
+	j["extensionLength"] = extensionLength;
+	j["animation"]["Ax"]["keys"] = Ax.getKeys();
+	j["sourcePath"]["segment1"]["point"]["x"] = sourcePath.getSegments()[1]->_point.x;
+	j["sourcePath"]["segment1"]["point"]["y"] = sourcePath.getSegments()[1]->_point.y;
+	j["sourcePath"]["segment1"]["handleIn"]["x"] = sourcePath.getSegments()[1]->_handleIn.x;
+	j["sourcePath"]["segment1"]["handleIn"]["y"] = sourcePath.getSegments()[1]->_handleIn.y;
 
-	std::ofstream o("bin/data/projects/grassblade.json");
+	std::ofstream o(filepath);
 	o << std::setw(2) << j.dump() << std::endl;
 	o.close();
 	cout << "save:" << endl << j.dump() << endl;
 }
 
-void Grassblade::pasteKeyframesFromAE() {
+void Grassblade::render() {
 
-	std::vector<Animation::AnimCurve> curves;
-
-	std::string filename{ ("projects/aeKeyframesData.txt") };
-	std::string line;
-	ifstream f(ofToDataPath(filename));
-	if (!f.is_open()) {
-		cout << "error while opening file" << endl;
-		return;
-	}
-
-	// Process title
-	// skip to metadatablock block
-	while (std::getline(f, line) && line != "") {}
-
-	/* Process keyframes data */
-	// skip to first keyframes block
-	while (std::getline(f, line) && line != "") {}
-
-	int currentBlock = 0;
-	while (currentBlock < 3) {
-		// process block header (simply step through)
-		std::getline(f, line);
-
-		// Process csv heading (simply step throuh)
-		std::getline(f, line);
-
-		// process csv rows one by one
-		cout << "load keyframes" << endl;
-		curves.push_back(Animation::AnimCurve());
-		curves.push_back(Animation::AnimCurve());
-		while (std::getline(f, line) && line != "") {
-			std::string cell;
-			std::stringstream linestream(line);
-			int frame;
-			float x, y;
-			linestream >> frame >> x >> y;
-			cout << "line: " << line << endl;
-			cout << "  Key: " << frame << ", " << x << ", " << y << endl;
-			curves[currentBlock*2].setValueAtFrame(x, frame);
-			curves[currentBlock*2+1].setValueAtFrame(y, frame);
-		}
-		currentBlock++;
-	}
-
-	if (f.bad()) {
-		cout << "error while reading file" << endl;
-		return;
-	}
-
-	// if everythin went fine, set the curves
-	std::vector<Animation::AnimCurve*> targetCurves{ &Ax, &Ay, &Bx, &By, &Cx, &Cy };
-	for (auto i = 0; i < currentBlock; i++) {
-		*targetCurves[i*2+0] = curves[i * 2 + 0];
-		*targetCurves[i * 2 + 1] = curves[i * 2 + 1];
-	}
 }
 
-void Grassblade::draw() {
-	/* -----------------------------------
-	   TIME
-	   -----------------------------------*/
-	   // model
-	static int F{ 0 }, begin{ 0 }, end{ 99 };
-	static bool play{ false };
+void Grassblade::open() {
+	ofFile file;
+	if (!file.open(filepath)) cout << "cannot open file" << endl;
 
-	// logic 
-	if (play)
-		F++;
-	if (play && F > end)
-		F = begin;
+	json j;
+	file >> j;
+	file.close();
 
-	// save json to file
-	ImGui::Begin("Properties");
+	Ax.setKeys({ j["animation"]["Ax"]["keys"].get<std::vector<Animation::Key>>()});
+	Ax.label = "Ax";
+	Ay.setKeys( { Animation::Key(0,-140) } );
+	Ay.label = "Ay";
+	moviefile = j["movie"]["filename"].get<std::string>();
+	startTime = j.value("startTime", startTime);
+	endTime = j.value("endTime", endTime);
+	deformFactor = j.value("deformFactor", deformFactor);
+	extensionLength = j.value("extensionLength", extensionLength);
+
+	double p1x = j["sourcePath"]["segment1"]["point"]["x"];
+	double p1y = j["sourcePath"]["segment1"]["point"]["y"];
+	sourcePath.getSegments()[1]->_point = glm::vec2(p1x, p1y);
+	double h1x = j["sourcePath"]["segment1"]["handleIn"]["x"];
+	double h1y = j["sourcePath"]["segment1"]["handleIn"]["y"];
+	sourcePath.getSegments()[1]->_handleIn = glm::vec2(h1x, h1y);
+}
+
+void Grassblade::importKeysFromAE() {
+	std::string filename{ ofToDataPath("projects/aeKeyframesData.txt") };
+	std::vector<Animation::AnimCurve> curves = Animation::Translators::AEAnimationData::import(filename);
+
+	cout << curves.size() << " anim curves imported from: " << filename << endl;
+
+	Ax = curves[0]; // TODO: the order has not been tested yet... !!!
+	Ay = curves[1];
+}
+
+void Grassblade::importKeysFromMaya() {
+	std::string filename{ "C:/Users/andris/Desktop/grassrelativityfootage/anim_6923_v04.anim" };
+	std::vector<Animation::AnimCurve> curves = Animation::Translators::MayaAnim::import(filename);
+
+	cout << curves.size() << " anim curves imported from: " << filename << endl;
+
+	for (auto & key : curves[0].getKeys()) {
+		key.value *= 100;
+	}
+	for (auto & key : curves[1].getKeys()) {
+		key.value *= -100;
+	}
+	Ax = curves[0];
+	Ay = curves[1];
+}
+
+void Grassblade::onGui() {
+	/* VIEWER */
+	ImGui::Begin("Viewer");
+	Im2D::ViewerBegin("viewport");
+
+	glm::vec2 P1 = sourcePath.getSegments()[0]->_point;
+	if (Im2D::DragPoint("P1", &P1)) {
+		// animate
+		if (autokey) {
+			Ax.setValueAtFrame(P1.x, F);
+			Ay.setValueAtFrame(P1.y, F);
+		}
+	}
+	glm::vec2 h2 = sourcePath.getSegments()[1]->_point+sourcePath.getSegments()[1]->_handleIn;
+	if (Im2D::DragPoint("h2", &h2)) {
+		sourcePath.getSegments()[1]->_handleIn = h2 - sourcePath.getSegments()[1]->_point;
+	}
+
+	Im2D::DragPoint("p2", &sourcePath.getSegments()[1]->_point);
+
+	Im2D::ViewerEnd();
+	ImGui::End();
+
+	/* INSPECTOR */
+	ImGui::Begin("Inspector");
 	if (ImGui::Button("save")) {
 		save();
 	}
-	if (ImGui::Button("pasteKeyframesFromAE")) {
-		pasteKeyframesFromAE();
+
+	if (ImGui::Button("importKeysFromAE")) {
+		importKeysFromAE();
 	}
-	ImGui::End();
 
-	/*
-	 *layout windows
-	 */
-	int propertiesWidth = 200;
-	int timeLineHeight = 80;
-	float verticalRatio = 0.75;
-	int menuBarHeight = 18;
-	int viewportWidth = ofGetWidth() - menuBarHeight;
-	int viewportHeight = ofGetHeight();
+	if (ImGui::Button("importKeysMaya")) {
+		importKeysFromMaya();
+	}
 
-	ImGui::SetNextWindowPos(ImVec2(viewportWidth - propertiesWidth, menuBarHeight));
-	ImGui::SetNextWindowSize(ImVec2(200, viewportHeight));
-	ImGui::Begin("Properties"); ImGui::End();
+	if (ImGui::Button("copy from source")) {
+		targetPath = sourcePath;
+	}
 
-	ImGui::SetNextWindowPos(ImVec2(0, menuBarHeight));
-	ImGui::SetNextWindowSize(ImVec2(viewportWidth - 200, (viewportHeight - timeLineHeight)* verticalRatio));
-	ImGui::SetNextWindowBgAlpha(0.0);
-	ImGui::Begin("Viewer"); ImGui::End();
-
-	ImGui::SetNextWindowPos(ImVec2(0, (viewportHeight - timeLineHeight) * verticalRatio + menuBarHeight));
-	ImGui::SetNextWindowSize(ImVec2(viewportWidth - 200, timeLineHeight));
-	ImGui::Begin("TimeSlider"); ImGui::End();
-
-	ImGui::SetNextWindowPos(ImVec2(0, (viewportHeight - timeLineHeight) *verticalRatio + timeLineHeight + menuBarHeight));
-	ImGui::SetNextWindowSize(ImVec2(viewportWidth - 200, (viewportHeight - timeLineHeight) * (1 - verticalRatio)));
-	ImGui::Begin("GraphEditor"); ImGui::End();
-
-	// sync ofCamera to viewer
-	static ofCamera cam;
-	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
-	Utils::ofSyncCameraToViewport(cam);
-	Im2D::ViewerEnd();
-	ImGui::End();
-
-	// Gui
-	ImGui::Begin("TimeSlider");
-	Widgets::TimeSlider("TimeSlider", &F, &play, &begin, &end);
-	ImGui::End();
-
-
-	/* -----------------------------------
-	   Create target points
-	   -----------------------------------*/
-
-
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create target points", ImGuiTreeNodeFlags_DefaultOpen)) {
-		for (auto i = 0; i < P1.size(); i++) {
-			DragVec2(std::to_string(i).c_str(), &P1[i]);
+	if (ImGui::CollapsingHeader("read movie", ImGuiTreeNodeFlags_DefaultOpen)) {
+		std::string str = reader.getFile();
+		std::vector<char> data(str.begin(), str.end());
+		if (ImGui::InputText("path", data.data(), data.size())) {
+			std::string str{ data.data() };
+			reader.setFile(str);
 		}
+
+		if (reader.getFile().empty()) {
+			ImGui::TextColored(ImColor(255, 0, 0), "- no file --");
+		}
+		else {
+			ImGui::TextWrapped("file: %s", reader.getFile().c_str());
+		}
+		ImGui::Text("begin: %i, end: %i", 0, reader.getFrameCount());
+		ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
+	}
+
+	if (ImGui::CollapsingHeader("extend paths", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::Text("modifie source and target path");
+		ImGui::DragFloat("length", &extensionLength);
+	}
+	if (ImGui::CollapsingHeader("Deform", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::SliderFloat("deform", &deformFactor, 0, 1.0);
 	}
 	ImGui::End();
 
-	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
-	for (auto i = 0; i < P1.size(); i++) {
-		Im2D::DragPoint(std::to_string(i).c_str(), &P1[i]);
-	}
-	Im2D::ViewerEnd();
+	/* TIME SLIDER */
+	ImGui::Begin("TimeSlider");
+	Widgets::TimeSlider("TimeSlider", &F, &play, &startTime, &endTime);
 	ImGui::End();
 
-
-	/* -----------------------------------
-	   Create target Path
-	   -----------------------------------*/
-	Paper::Path path1;
-	path1.add(Paper::Segment(P1[0]));
-	path1.add(Paper::Segment(P1[1], (P1[0] - P1[2])*0.25, (P1[2] - P1[0])*0.25));
-	path1.add(Paper::Segment(P1[2]));
-
-	// gui
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create target path", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Text("smooth path from points");
-	}
-	ImGui::End();
-
-	// draw target path
-	cam.begin();
-	Utils::ofDraw(path1);
-	cam.end();
-
-	/* -----------------------------------
-	   Animation
-	   -----------------------------------*/
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create animcurves", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Text("Ax %g", Ax.getValueAtFrame(F));
-		ImGui::Text("Ay %g", Ay.getValueAtFrame(F));
-		ImGui::Text("Bx %g", Bx.getValueAtFrame(F));
-		ImGui::Text("By %g", By.getValueAtFrame(F));
-		ImGui::Text("Cx %g", Cx.getValueAtFrame(F));
-		ImGui::Text("Cy %g", Cy.getValueAtFrame(F));
-	}
-	ImGui::End();
-
-	// edit animation curves as points
-	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
-	glm::vec2 A0{ Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) };
-	glm::vec2 B0{ Bx.getValueAtFrame(F), By.getValueAtFrame(F) };
-	glm::vec2 C0{ Cx.getValueAtFrame(F), Cy.getValueAtFrame(F) };
-	if (Im2D::DragPoint("A0", &A0)) {
-		Ax.setValueAtFrame(A0.x, F);
-		Ay.setValueAtFrame(A0.y, F);
-	}
-	if (Im2D::DragPoint("B0", &B0)) {
-		Bx.setValueAtFrame(B0.x, F);
-		By.setValueAtFrame(B0.y, F);
-	}
-	if (Im2D::DragPoint("C0", &C0)) {
-		Cx.setValueAtFrame(C0.x, F);
-		Cy.setValueAtFrame(C0.y, F);
-	}
-	Im2D::ViewerEnd();
-	ImGui::End();
-
-	// edit curves in graph editor
+	/* GRAPH EDITOR */
 	ImGui::Begin("GraphEditor");
-	std::vector<Animation::AnimCurve*> curves = { &Ax, &Ay, &Bx, &By, &Cx, &Cy };
+	std::vector<Animation::AnimCurve*> curves = { &Ax, &Ay};
 	Widgets::GraphEditor("GraphEditor", curves, &F);
 
 	// handle shortcuts
@@ -481,126 +217,69 @@ void Grassblade::draw() {
 		}
 	}
 	ImGui::End();
+}
 
+void Grassblade::draw() {
 	/* -----------------------------------
-	   Create animated source path
+	   TIME
 	   -----------------------------------*/
-	Paper::Path path0;
-	path0.add({
-		std::make_shared<Paper::Segment>(A0),
-		std::make_shared<Paper::Segment>(B0, (A0 - C0)*0.25, (C0 - A0)*0.25),
-		std::make_shared<Paper::Segment>(C0)
-		});
+	if (play)
+		F++;
+	if (play && F > endTime)
+		F = startTime;
 
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("create source path", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Text("smooth path from points");
-	}
+	// sync ofCamera to viewer
+	ImGui::SetNextWindowBgAlpha(0.0);
+	static bool ViewerOpen{ true };
+	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
+	Im2D::ViewerBegin("viewport");
+	Utils::ofSyncCameraToViewport(cam);
+	Im2D::ViewerEnd();
 	ImGui::End();
 
 	/* -----------------------------------
-	   Read movie
+	   Create target Path
 	   -----------------------------------*/
-	static Reader reader(moviefile);
 	auto & currentImage = reader.getImageAtFrame(F);
-	currentImage.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+	//currentImage.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
 
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("read movie", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::TextWrapped("file: %s", !reader.getFile().empty() ? reader.getFile().c_str() : "-no file-");
-		ImGui::Text("begin: %i, end: %i", 0, reader.getFrameCount());
-		ImGui::Text("dimension: %ix%ipx", reader.getWidth(), reader.getHeight());
-	}
-	ImGui::End();
+	// animate source path
+	sourcePath.getSegments()[0]->_point = glm::vec2({ Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) });
 
-	// draw movie
-	//{
-	//	ImGui::Begin("Viewer");
-	//	Im2D::ViewerBegin("viewport");
-	//	cam.begin();
-	//	ofSetColor(ofColor::white);
-	//	currentImage.draw(0, 0);
-	//	cam.end();
-	//	Im2D::ViewerEnd();
-	//	ImGui::End();
-	//}
+	// extend paths
+	Paper::Path extendedSourcePath = extend(sourcePath, extensionLength);
+	Paper::Path extendedTargetPath = extend(targetPath, extensionLength);
 
-	// draw plate
-	//{
-	//	ImGui::Begin("Viewer");
-	//	Im2D::ViewerBegin("viewport");
-	//	cam.begin();
-	//	ofSetColor(ofColor::cadetBlue);
-	//	plate.draw(OF_MESH_FILL);
-	//	ofSetColor(ofColor::cadetBlue);
-	//	plate.draw(OF_MESH_WIREFRAME);
-	//	cam.end();
-	//	Im2D::ViewerEnd();
-	//	ImGui::End();
-	//}
-
-	/* -----------------------------------
-	   Extend paths
-	   -----------------------------------*/
-	static float length{ 250 }; //TODO: load from file
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("extend paths", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Text("modifie source and target path");
-		ImGui::DragFloat("length", &length);
-	}
-	ImGui::End();
-
-	auto firstLocation0 = path0.getLocationAtTime(0);
-	auto lastLocation0 = path0.getLocationAtTime(1.0);
-	path0.insert(0, std::make_shared<Paper::Segment>(firstLocation0._point - firstLocation0._tangent*length));
-	path0.add(std::make_shared<Paper::Segment>(lastLocation0._point + lastLocation0._tangent*length));
-
-	auto firstLocation1 = path1.getLocationAtTime(0);
-	auto lastLocation1 = path1.getLocationAtTime(1.0);
-	path1.insert(0, std::make_shared<Paper::Segment>(firstLocation1._point - firstLocation1._tangent*length));
-	path1.add(std::make_shared<Paper::Segment>(lastLocation1._point + lastLocation1._tangent*length));
 
 	// draw extended paths
-	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
 	cam.begin();
 	ofSetColor(ofColor::white);
-	Utils::ofDraw(path0);
-	Utils::ofDraw(path1);
+	Utils::ofDraw(extendedSourcePath);
+	Utils::ofDraw(extendedTargetPath);
 	cam.end();
-	Im2D::ViewerEnd();
-	ImGui::End();
 
-	/* -----------------------------------
-	   Deform plate with paths
-	   -----------------------------------*/
-	static float deform{ 1.0 }; //TODO: load from file
-	ImGui::Begin("Properties");
-	if (ImGui::CollapsingHeader("Deform", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::SliderFloat("deform", &deform, 0, 1.0);
-	}
-	ImGui::End();
-
-	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
-
-	addField({ A0, B0, C0 }, [&](glm::vec2 P)->glm::vec2 {
-		return Field::pathToPath(path0, path1, P);
-	});
-	Im2D::ViewerEnd();
-	ImGui::End();
-
-	if (deform > 0) {
+	// Deform plate with paths
+	if (deformFactor > 0) {
 		auto & mesh = plate.getMesh();
 		for (auto i = 0; i < mesh.getVertices().size(); i++) {
 			glm::vec2 P0 = plateMesh.getVertex(i);
-			auto P1 = Field::pathToPath(path0, path1, P0);
+			auto P1 = Field::pathToPath(extendedSourcePath, extendedTargetPath, P0);
 			if (!isnan(P1.x) && !isnan(P1.y)) {
-				mesh.setVertex(i, glm::vec3(lerp(P0, P1, deform), 0));
+				mesh.setVertex(i, glm::vec3(lerp(P0, P1, deformFactor), 0));
 			}
 		}
 	}
 
+	//// display deformation field
+	//ImGui::Begin("Viewer");
+	//Im2D::ViewerBegin("viewport");
+	//addField({ sourcePath.getSegments()[0]->_point }, [&](glm::vec2 P)->glm::vec2 {
+	//	return Field::pathToPath(extendedSourcePath, extendedTargetPath, P);
+	//});
+	//Im2D::ViewerEnd();
+	//ImGui::End();
+
+	// draw image plate
 	cam.begin();
 	ofSetColor(ofColor::cadetBlue);
 	ofSetColor(ofColor::white);
@@ -608,19 +287,98 @@ void Grassblade::draw() {
 	plate.draw(OF_MESH_FILL);
 	ofSetColor(ofColor(255, 40));
 	currentImage.unbind();
-	plate.draw(OF_MESH_WIREFRAME);
-	ofSetColor(ofColor::white);
-	Utils::ofDraw(path0);
-	Utils::ofDraw(path1);
+	//plate.draw(OF_MESH_WIREFRAME);
+	//ofSetColor(ofColor::white);
+	Utils::ofDraw(sourcePath);
+	Utils::ofDraw(targetPath);
 	cam.end();
+
+
+	// show closest point
+	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
+	Im2D::ViewerBegin("viewport");
+	glm::vec2 mousePoint = Im2D::GetMousePos();
+	Im2D::ViewerEnd();
+	ImGui::End();
+	double closestTime;
+	glm::vec2 closestPoint;
+	closestTime = extendedSourcePath.getNearestTime(mousePoint);
+	closestPoint = extendedSourcePath.getPointAtTime(closestTime);
+	cam.begin();
+	ofDrawCircle(closestPoint, 10);
+	cam.end();
+
+	onGui();
+
+	ImGui::Begin("Render");
+	int distortion_size[2]{ distortionTexture.getWidth(), distortionTexture.getHeight() };
+	if (ImGui::DragInt2("distortion size", distortion_size, 1.0, 2, 1920)) {
+		distortionTexture.allocate(distortion_size[0], distortion_size[1], GL_RGB32F);
+	}
+	int renderfbo_size[2]{ renderFbo.getWidth(), renderFbo.getHeight() };
+	if (ImGui::DragInt2("renderfbo size", renderfbo_size, 1.0, 2, 1920)) {
+		renderFbo.allocate(renderfbo_size[0], renderfbo_size[1], GL_RGB32F);
+	}
+
+	//ASYNC RENDER
+	Rect reader_rect({ -1920 / 2, -1080 / 2 }, 1920, 1080);
+	Rect distortion_rect({ 0,0 }, distortionTexture.getWidth(), distortionTexture.getHeight());
+	static double renderProgress{ 0 };
+	static std::future<ofFloatPixels> result;
+	auto renderasync = [this, distortion_rect, reader_rect, extendedTargetPath, extendedSourcePath]() {
+		const int w = distortion_rect.width;
+		const int h = distortion_rect.height;
+		const int c = 4;
+		std::vector<float> pixels(w*h*c);
+		for (int i = 0; i < w * h; i++) {
+			int x = i % w;
+			int y = i / w;
+
+			auto P = Rect::map({ x, y }, distortion_rect, reader_rect);
+			glm::vec2 pos = Field::pathToPath(extendedTargetPath, extendedSourcePath, P);
+
+			// map from 1080p to [0-1]
+			pos = Rect::map(pos, reader_rect, { {0,0},1,1 });
+			glm::vec4 color = glm::vec4(pos[0], pos[1], 0, 1);
+
+			// fill data
+			for (auto j = 0; j < c; j++) {
+				pixels[i * c + j] = color[j];
+			}
+
+			renderProgress = (double)i / (w*h);
+		}
+
+		// upload data to GPU
+		ofFloatPixels pix;
+		pix.setFromPixels(pixels.data(), w, h, ofGetImageTypeFromGLType(GL_RGBA32F));
+		
+		//delete[] data;
+		return pix;
+	};
+
+	if (!result.valid() && ImGui::Button("launch async render")) {
+		result = std::async(std::launch::async, renderasync);
+	}
+	if(result.valid()) {
+		ImGui::Text("rendering... %.0f%s", renderProgress*100, "%");
+	}
+	if (result.valid() && result.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+		auto pix = result.get();
+		distortionTexture.loadData(pix);
+		distort(reader.getImageAtFrame(F).getTexture(), distortionTexture, &renderFbo);
+	}
+
+	ImGui::Image((void*)distortionTexture.getTextureData().textureID, ImVec2(192, 108));
+	ImGui::Image((void*)renderFbo.getTexture().getTextureData().textureID, ImVec2(192, 108));
+	ImGui::End();
 };
 
 Grassblade::~Grassblade() {
-
+	save();
 };
 
 void showGrassblade() {
 	static Grassblade grass;
 	grass.draw();
-	
 }

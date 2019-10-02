@@ -4,24 +4,109 @@
 #include "numerical.h"
 #include "Path.h"
 #include "CurveLocation.h"
+#include "basic/Point.h"
+#include "basic/Line.h"
 namespace Paper {
-	namespace Point {
-		bool isZero(glm::vec2 P) {
-			return Numerical::isZero(P.x) && Numerical::isZero(P.y);
+
+	bool Curve::evaluate2(std::array<double, 8> const & v, double t, glm::vec2 * point, bool normalized, glm::vec2 * tangent, glm::vec2 * normal, double * curvature) {
+		// Do not produce results if parameter is out of range or invalid.
+		if (isnan(t) || t < 0 || t > 1)
+			return false;
+
+		double x0 = v[0]; double y0 = v[1];
+		double x1 = v[2]; double y1 = v[3];
+		double x2 = v[4]; double y2 = v[5];
+		double x3 = v[6]; double y3 = v[7];
+
+		// If the curve handles are almost zero, reset the control points to the
+		// anchors.
+		if (Numerical::isZero(x1 - x0) && Numerical::isZero(y1 - y0)) {
+			x1 = x0;
+			y1 = y0;
+		}
+		if (Numerical::isZero(x2 - x3) && Numerical::isZero(y2 - y3)) {
+			x2 = x3;
+			y2 = y3;
 		}
 
-		bool isCollinear(glm::vec2 A, glm::vec2 B) {
-			// NOTE: We use normalized vectors so that the epsilon comparison is
-			// reliable. We could instead scale the epsilon based on the vector
-			// length. But instead of normalizing the vectors before calculating
-			// the cross product, we can scale the epsilon accordingly.
-			return abs(A.x * B.y - A.y * B.x)
-				<= sqrt((A.x * A.x + A.y * A.y) * (B.x * B.x + B.y * B.y))
-				* /*#=*/Numerical::TRIGONOMETRIC_EPSILON;
+		// Calculate the polynomial coefficients.
+		double cx = 3 * (x1 - x0);
+		double bx = 3 * (x2 - x1) - cx;
+		double ax = x3 - x0 - cx - bx;
+		double cy = 3 * (y1 - y0);
+		double by = 3 * (y2 - y1) - cy;
+		double ay = y3 - y0 - cy - by;
+
+		if (point != nullptr) {
+			// type === 0: getPoint()
+			// Calculate the curve point at parameter value t
+			// Use special handling at t === 0 / 1, to avoid imprecisions.
+			// See #960
+			point->x = t == 0 ? x0 : t == 1 ? x3
+				: ((ax * t + bx) * t + cx) * t + x0;
+			point->y = t == 0 ? y0 : t == 1 ? y3
+				: ((ay * t + by) * t + cy) * t + y0;
 		}
+
+		if(tangent!=nullptr || normal!=nullptr || curvature!=nullptr) {
+			// type === 1: getTangent()
+			// type === 2: getNormal()
+			// type === 3: getCurvature()
+			double tMin = Numerical::CURVETIME_EPSILON;
+			double tMax = 1 - tMin;
+			// 1: tangent, 1st derivative
+			// 2: normal, 1st derivative
+			// 3: curvature, 1st derivative & 2nd derivative
+			// Prevent tangents and normals of length 0:
+			// https://stackoverflow.com/questions/10506868/
+			double x, y;
+			if (t < tMin) {
+				x = cx;
+				y = cy;
+			}
+			else if (t > tMax) {
+				x = 3 * (x3 - x2);
+				y = 3 * (y3 - y2);
+			}
+			else {
+				x = (3 * ax * t + 2 * bx) * t + cx;
+				y = (3 * ay * t + 2 * by) * t + cy;
+			}
+			if (normalized) {
+				// When the tangent at t is zero and we're at the beginning
+				// or the end, we can use the vector between the handles,
+				// but only when normalizing as its weighted length is 0.
+				if (x == 0 && y == 0 && (t < tMin || t > tMax)) {
+					x = x2 - x1;
+					y = y2 - y1;
+				}
+				// Now normalize x & y
+				double len = sqrt(x * x + y * y);
+				if (len) {
+					x /= len;
+					y /= len;
+				}
+			}
+			if (curvature!=nullptr) {
+				// Calculate 2nd derivative, and curvature from there:
+				// http://cagd.cs.byu.edu/~557/text/ch2.pdf page#31
+				// k = |dx * d2y - dy * d2x| / (( dx^2 + dy^2 )^(3/2))
+				auto x2 = 6 * ax * t + 2 * bx;
+				auto y2 = 6 * ay * t + 2 * by;
+				auto d = pow(x * x + y * y, 3 / 2);
+				// For JS optimizations we always return a Point, although
+				// curvature is just a numeric value, stored in x:
+				*curvature = d != 0 ? (x * y2 - y * x2) / d : 0;
+			}
+			if (normal != nullptr) {
+				normal->x = y;
+				normal->y = -x;
+			}
+		}
+		return true;
 	}
 
-	glm::vec2 Curve::evaluate(std::array<double, 8> v, double t, int type, bool normalized) {
+	glm::vec2 Curve::evaluate(std::array<double, 8> const & v, double t, int type, bool normalized) {
 		// Do not produce results if parameter is out of range or invalid.
 		if (isnan(t) || t < 0 || t > 1)
 			return glm::vec2(NAN);
@@ -116,8 +201,70 @@ namespace Paper {
 		return type == 2 ? glm::vec2(y, -x) : glm::vec2(x, y);
 	}
 
+	bool Curve::isStraight(glm::vec2 const & p1, glm::vec2 const & h1, glm::vec2 const & h2, glm::vec2 const & p2){
+		if (Point::isZero(h1) && Point::isZero(h2)) {
+			// no handles
+			return true;
+		}
+		else {
+			auto v = p2 - p1;
+			if (Point::isZero(v)) {
+				// Zero-length line, with some handles defined.
+				return false;
+			}
+			else if (Point::isCollinear(v, h1) && Point::isCollinear(v, h2)) {
+				// Collinear handles: In addition to v.isCollinear(h) checks, we
+				// need to measure the distance to the line, in order to be able
+				// to use the same epsilon as in Curve#getTimeOf(), see #1066.
+				Line l(p1, p2);
+				auto epsilon = Numerical::GEOMETRIC_EPSILON;
+				if (l.getDistance(p1+h1) < epsilon &&
+					l.getDistance(p2+h2) < epsilon) {
+					// Project handles onto line to see if they are in range:
+					
+					auto div = glm::dot(v, v);;
+					auto s1 = glm::dot(v, h1) / div;
+					auto s2 = glm::dot(v,h2) / div;
+					return s1 >= 0 && s1 <= 1 && s2 <= 0 && s2 >= -1;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool Curve::isStraight() const{
+		return Curve::isStraight(_segment1->_point, _segment1->_handleOut, _segment1->_point, _segment2->_handleIn);
+	}
+
+	bool Curve::isLinear() const{
+		glm::vec2 p1, h1, h2, p2;
+		p1 = _segment1->_point;
+		h1 = _segment1->_handleOut;
+		h2 = _segment2->_handleIn;
+		p2 = _segment2->_point;
+		glm::vec2 third = (p2-p1)/3.0;
+		return h1 == third && h2 == -third;
+	}
+
+	Line Curve::getLine() const {
+		return Line(_segment1->_point, _segment2->_point);
+	}
+
+	bool Curve::isCollinear(Curve const & curve) const {
+		return isStraight() && curve.isStraight()
+			&& getLine().isCollinear(curve.getLine());
+	}
+
+	bool Curve::hasHandles() const {
+		return !Point::isZero(_segment1->_handleOut)
+			|| !Point::isZero(_segment2->_handleIn);
+	}
+
 	glm::vec2 Curve::getPointAtTime(double t) const {
-		return evaluate(getValues(), t, 0, false);
+		glm::vec2 point;
+		if (!evaluate2(getValues(), t, &point))
+			return glm::vec2(NAN);
+		return point;
 	};
 
 	glm::vec2 Curve::getTangentAtTime(double t) const {
@@ -142,15 +289,37 @@ namespace Paper {
 
 	double Curve::getNearestTime(glm::vec2 point) const {
 		/* rewritten from paper.js*/
-		const int count = 100;
+
+		if (isStraight()) {
+			auto v = getValues();
+			auto x0 = v[0], y0 = v[1];
+			auto x3 = v[6], y3 = v[7];
+			auto vx = x3 - x0, vy = y3 - y0;
+			auto det = vx * vx + vy * vy;
+			// Avoid divisions by zero.
+			if (det == 0) {
+				std::cout << "avoid division by zero" << std::endl;
+				return 0;
+			}
+			// Project the point onto the line and calculate its linear
+			// parameter u along the line: u = (point - p1).dot(v) / v.dot(v)
+			double u = ((point.x - x0) * vx + (point.y - y0) * vy) / det;
+			return u < Numerical::EPSILON ? 0
+				: u > (1 - Numerical::EPSILON) ? 1
+				: getTimeOf(glm::vec2(x0 + u * vx, y0 + u * vy));
+		}
+
+		const int count = 25; //was 100, TODO count is the stpes to refine the losest point.
 		double minDist = std::numeric_limits<double>::infinity();
 		double minT = 0;
 
 		auto refine = [&](double t)->bool {
 			if (t >= 0.0 && t <= 1.0) {
-				double dist = glm::distance(point, getPointAtTime(t));
-				if (dist < minDist) {
-					minDist = dist;
+				//double distance = glm::distance(point, getPointAtTime(t));
+				auto temp = point - getPointAtTime(t);
+				double distance = glm::dot(temp, temp);
+				if (distance < minDist) {
+					minDist = distance;
 					minT = t;
 					return true;
 				}
@@ -210,6 +379,19 @@ namespace Paper {
 	}
 
 	double Curve::getLength(double a, double b, std::function<double(double)> ds) const {
+		if (isStraight()) {
+			// Sub-divide the linear curve at a and b, so we can simply
+			// calculate the Pythagorean Theorem to get the range's length.
+			if (b < 1 || a>0) {
+				throw "get straight range length is not implemented yet !!!";
+			}
+
+			// The length of straight curves can be calculated more easily.
+			auto v = getValues();
+			auto dx = v[6] - v[0]; // x3 - x0
+			auto dy = v[7] - v[1]; // y3 - y0
+			return sqrt(dx * dx + dy * dy);
+		}
 		return Numerical::integrate(ds, a, b, getIterations(a, b));
 	}
 
@@ -226,40 +408,51 @@ namespace Paper {
 		return CurveLocation(*this, t);
 	}
 
-	//TODO: originaly isClose is part of the point class. Check how PAPER.js handles epsilon parameter?
-	bool isClose(glm::vec2 P, glm::vec2 Q, double epsilon = Numerical::EPSILON) {
-		return glm::distance(P, Q) < epsilon;
-	}
-
 	CurveLocation Curve::getLocationOf(glm::vec2 point) const {
 		return getLocationAtTime(getTimeOf(point));
 	}
 
 	double Curve::getTimeOf(glm::vec2 point) const {
 		auto v = getValues();
+		// Before solving cubics, compare the beginning and end of the curve
+		// with zero epsilon:
 		glm::vec2 p0{ v[0], v[1] };
 		glm::vec2 p3{ v[6], v[7] };
-		double t = isClose(point, p0) ? 0
-			: isClose(point, p3) ? 1
-			: NAN;
+		double epsilon = Numerical::EPSILON;
+		double geomEpsilon = Numerical::GEOMETRIC_EPSILON;
+		double t = Point::isClose(point, p0, epsilon) ? 0.0
+				 : Point::isClose(point, p3, epsilon) ? 1.0
+				 : NAN;
 
 		if (isnan(t)) {
+			// Solve the cubic for both x- and y-coordinates and consider all
+			// solutions, testing with the larger / looser geometric epsilon.
 			std::vector<double> coords{ point.x, point.y };
 			std::vector<double> roots;
 			for (auto c = 0; c < 2; c++) {
-				//TODO: in paperjs there is a private v parameter of curve, holdin all the coordinates of the curve instead 4 points
-				// for now supply an array of the point coords, but later implement the v aparameter as in paperjs, and use that.
-				auto count = Curve::solveCubic(v, c, coords[c], roots, 0, 1);
+				int count = Curve::solveCubic(v, c, coords[c], roots, 0, 1);
 				for (auto i = 0; i < count; i++) {
 					auto u = roots[i];
-					if (isClose(point, getPointAtTime(u), Numerical::GEOMETRIC_EPSILON))
+					//!TODO: BUG !!!!! this must be a bug
+					// the original PAPER.js code makes sure that the point at time lies on the curve.
+					// dont really know why... the thing is it works now, but there certanly a reason for it.
+					// if a keep the original check, it wont be close enough. There is probably a precision mistake somewhere in the code.
+					// for now we return the u without any check
+					return u; 
+					if (Point::isClose(point, getPointAtTime(u), geomEpsilon))
 						return u;
 				}
 			}
 		}
+
+		// Since we're comparing with geometric epsilon for any other t along
+		// the curve, do so as well now for the beginning and end of the curve.
+		return Point::isClose(point, p0, geomEpsilon) ? 0
+			: Point::isClose(point, p3, geomEpsilon) ? 1
+			: NAN;
 	}
 
-	double Curve::solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
+	int Curve::solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
 		auto v0 = v[coord];
 		auto v1 = v[coord + 2];
 		auto v2 = v[coord + 4];

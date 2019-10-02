@@ -135,7 +135,7 @@ namespace Numerical {
 	*
 	* @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 	*/
-	double solveQuadratic(double a, double b, double c, std::vector<double> roots, double min = NAN, double max = NAN);
+	int solveQuadratic(double a, double b, double c, std::vector<double> & roots, double min = NAN, double max = NAN);
 
 	/**
 	* Solve a cubic equation, using numerically stable methods,
@@ -168,5 +168,5 @@ namespace Numerical {
 	*
 	* @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 	*/
-	double solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min = NAN, double max = NAN);
+	int solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min = NAN, double max = NAN);
 };

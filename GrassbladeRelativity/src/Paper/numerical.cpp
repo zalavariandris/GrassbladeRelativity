@@ -26,7 +26,7 @@ ported from paperjs, numerical.js
   // Lookup tables for abscissas and weights with values for n = 2 .. 16.
 	  // As values are symmetric, only store half of them and adapt algorithm
 	  // to factor in symmetry.
-std::vector<std::vector<float>> abscissas = {
+std::vector<std::vector<double>> abscissas = {
 	{0.5773502691896257645091488},
 	{0,0.7745966692414833770358531},
 	{0.3399810435848562648026658,0.8611363115940525752239465},
@@ -44,7 +44,7 @@ std::vector<std::vector<float>> abscissas = {
 	{0.0950125098376374401853193,0.2816035507792589132304605,0.4580167776572273863424194,0.6178762444026437484466718,0.7554044083550030338951012,0.8656312023878317438804679,0.9445750230732325760779884,0.9894009349916499325961542}
 };
 
-std::vector<std::vector<float>> weights = {
+std::vector<std::vector<double>> weights = {
 	{1},
 	{0.8888888888888888888888889,0.5555555555555555555555556},
 	{0.6521451548625461426269361,0.3478548451374538573730639},
@@ -235,7 +235,7 @@ double Numerical::findRoot(std::function<double(double)> f, std::function<double
 *
 * @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 */
-double Numerical::solveQuadratic(double a, double b, double c, std::vector<double> roots, double min, double max) {
+int Numerical::solveQuadratic(double a, double b, double c, std::vector<double> & roots, double min, double max) {
 	auto x1 = std::numeric_limits<double>::infinity();
 	auto x2 = x1;
 	if (abs(a) < EPSILON) {
@@ -275,16 +275,21 @@ double Numerical::solveQuadratic(double a, double b, double c, std::vector<doubl
 			}
 		}
 	}
+
 	int count = 0;
-	double boundless = min == NAN;
+	bool boundless = min == NAN;
 	double minB = min - EPSILON;
 	double maxB = max + EPSILON;
 	// We need to include EPSILON in the comparisons with min / max,
 	// as some solutions are ever so lightly out of bounds.
-	if (isfinite(x1) && (boundless || x1 > minB && x1 < maxB))
-		roots[count++] = boundless ? x1 : clamp(x1, min, max);
-	if (x2 != x1 && isfinite(x2) && (boundless || x2 > minB && x2 < maxB))
-		roots[count++] = boundless ? x2 : clamp(x2, min, max);
+	if (isfinite(x1) && (boundless || x1 > minB && x1 < maxB)) {
+		roots.push_back(boundless ? x1 : clamp(x1, min, max));
+		count++;
+	}
+	if (x2 != x1 && isfinite(x2) && (boundless || x2 > minB && x2 < maxB)) {
+		roots.push_back( boundless ? x2 : clamp(x2, min, max) );
+		count++;
+	}
 	return count;
 };
 
@@ -319,7 +324,7 @@ double Numerical::solveQuadratic(double a, double b, double c, std::vector<doubl
 *
 * @author Harikrishnan Gopalakrishnan <hari.exeption@gmail.com>
 */
-double Numerical::solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min, double max) {
+int Numerical::solveCubic(double a, double b, double c, double d, std::vector<double> & roots, double min, double max) {
 	double f = getNormalizationFactor({ abs(a), abs(b), abs(c), abs(d) });
 	double x, b1, c2, qd, q;
 	if (f) {
@@ -332,7 +337,7 @@ double Numerical::solveCubic(double a, double b, double c, double d, std::vector
 	auto evaluate = [a, b, c, d, &b1,  &c2,  &qd,  &q,  &x](double x0) {
 		x = x0;
 		// Evaluate q, q', b1 and c2 at x
-		auto tmp = a * x;
+		double tmp = a * x;
 		b1 = tmp + b;
 		c2 = b1 * x + c;
 		qd = (tmp + b1) * x + c2;
@@ -351,8 +356,7 @@ double Numerical::solveCubic(double a, double b, double c, double d, std::vector
 		b1 = b;
 		c2 = c;
 		x = 0;
-	}
-	else {
+	} else {
 		// Here onwards we iterate for the leftmost root. Proceed to
 		// deflate the cubic into a quadratic (as a side effect to the
 		// iteration) and solve the quadratic.
@@ -380,11 +384,14 @@ double Numerical::solveCubic(double a, double b, double c, double d, std::vector
 		}
 	}
 	// The cubic has been deflated to a quadratic.
-	auto count = Numerical::solveQuadratic(a, b1, c2, roots, min, max);
-	auto boundless = min == NAN;
+	int count = Numerical::solveQuadratic(a, b1, c2, roots, min, max);
+	bool boundless = min == NAN;
 	if (isfinite(x) && (count == 0
-		|| count > 0 && x != roots[0] && x != roots[1])
+		|| count > 0 && x != roots[0] && (roots.size()>1 ? x != roots[1] : true)  )
 		&& (boundless || x > min - EPSILON && x < max + EPSILON))
-		roots[count++] = boundless ? x : clamp(x, min, max);
+	{
+		roots.push_back(boundless ? x : clamp(x, min, max));
+		count++;
+	}
 	return count;
 };

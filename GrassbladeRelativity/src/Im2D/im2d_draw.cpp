@@ -16,7 +16,7 @@ glm::vec2 fromScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
 	glm::mat3 projectionView = ctx->CurrentViewer->projectionMatrix * ctx->CurrentViewer->viewMatrix;
 	glm::vec3 result = glm::vec3(P.x, P.y, 1) * glm::transpose(glm::inverse(projectionView));
-	return ImVec2(result.x, result.y);
+	return glm::vec2(result.x, result.y);
 }
 
 void addPoint(glm::vec2 P, ImColor color, double r) {

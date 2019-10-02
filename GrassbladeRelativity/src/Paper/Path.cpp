@@ -14,10 +14,8 @@ namespace Paper {
 		_closed = false;
 	}
 
-
-
 	void Path::draw() const {
-		for (auto curve : getCurves()) {
+		for (auto const & curve : getCurves()) {
 			curve->draw();
 		}
 	}
@@ -56,19 +54,23 @@ namespace Paper {
 		return getCurves()[0];
 	}
 	std::shared_ptr<Curve> Path::getLastCurve() const {
-		auto curves = getCurves();
+		auto const & curves = getCurves();
 		return curves[curves.size() - 1];
 	}
 
 	double Path::getNearestTime(glm::vec2 point) const {
 		auto curves = getCurves();
+		if (curves.size() <= 0)
+			return NAN;
 		double minDist = std::numeric_limits<double>::infinity();
-		double minT;
+		double minT{NAN};
 		int index;
 		for (auto i = 0; i < curves.size(); i++) {
 			double t = curves[i]->getNearestTime(point);
 			glm::vec2 P = curves[i]->getPointAtTime(t);
-			double distance = glm::distance(point, P);
+			//double distance = glm::distance(point, P);
+			auto temp = point - P;
+			double distance = glm::dot(temp, temp);
 			if (distance < minDist) {
 				minT = t;
 				minDist = distance;
@@ -84,7 +86,7 @@ namespace Paper {
 			return CurveLocation();
 
 		//
-		auto curves = getCurves();
+		auto const & curves = getCurves();
 
 		//
 		auto minT = Numerical::CURVETIME_EPSILON;
@@ -142,7 +144,7 @@ namespace Paper {
 		return loc._curve.getNormalAtTime(loc._time);
 	}
 
-	int Path::_countCurves() const {
+	int Path::countCurves() const {
 		auto length = _segments.size();
 		// Reduce length by one if it's an open path:
 		return !_closed && length > 0 ? length - 1 : length;
@@ -150,7 +152,7 @@ namespace Paper {
 
 	std::vector<std::shared_ptr<Curve>> Path::getCurves() const {
 		if (CurvesNeedsUpdate) {
-			auto length = _countCurves();
+			auto length = countCurves();
 			_curves = std::vector<std::shared_ptr<Curve>>(length);
 			for (auto i = 0; i < length; i++) {
 				_curves[i] = std::make_shared<Curve>(/* TODO weak reference to path weak_from_this(),*/ _segments[i], _segments[i + 1]);
@@ -225,7 +227,7 @@ namespace Paper {
 		// Keep the curves list in sync all the time in case it was requested
 		// already.
 		if (!CurvesNeedsUpdate) {
-			auto total = _countCurves();
+			auto total = countCurves();
 			// If we're adding a new segment to the end of an open path,
 			// we need to step one index down to get its curve.
 			auto start = index > 0 && index + amount - 1 == total ? index - 1 : index;

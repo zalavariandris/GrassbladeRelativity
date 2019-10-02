@@ -11,7 +11,7 @@ namespace Paper {
 	class Path : public std::enable_shared_from_this<Path>
 	{
 
-		int _countCurves() const;
+		
 		bool _closed;
 		int _version;
 
@@ -29,7 +29,20 @@ namespace Paper {
 		Path();
 		Path(std::vector<std::shared_ptr<Segment>> segments);
 
+		Path& operator =(Path other) {
+			_segments = std::vector<std::shared_ptr<Segment>>();
+			for (auto segment : other.getSegments()) {
+				add({ std::make_shared<Paper::Segment>(
+					segment->_point,
+					segment->_handleIn,
+					segment->_handleIn)
+					});
+			}
+			return *this;
+		}
+
 		// accessors
+		int countCurves() const;
 		std::vector<std::shared_ptr<Curve>> getCurves() const;
 
 		//

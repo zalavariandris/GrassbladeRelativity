@@ -4,29 +4,48 @@
 #include <vector>
 #include "../Animation/AnimCurve.h"
 #include "of3dPrimitives.h"
-
+#include <utility> //std::pair
+#include "../Reader.h"
+#include "../Paper/Path.h"
 class Grassblade {
 public:
 	Grassblade();
 	~Grassblade();
 
-	void pasteKeyframesFromAE();
+	void importKeysFromAE();
+	void importKeysFromMaya();
 	void open();
 	void save();
 	void draw();
+	void onGui();
+	void render();
 private:
 
-	std::string filepath;
-	std::vector<glm::vec2> P1;
+	std::string filepath{ ofToDataPath("projects/grassblade.json") };
+	
+	Paper::Path sourcePath;
+	Paper::Path targetPath;
 	Animation::AnimCurve Ax;
 	Animation::AnimCurve Ay;
-	Animation::AnimCurve Bx;
-	Animation::AnimCurve By;
-	Animation::AnimCurve Cx;
-	Animation::AnimCurve Cy;
 	std::string moviefile;
 	ofPlanePrimitive plate;
 	ofMesh plateMesh;
+	int startTime{0};
+	int endTime{99};
+	float extensionLength{ 100 };
+	float deformFactor{ 1.0 };
+
+	int F;
+	bool play;
+
+	ofTexture distortionTexture;
+	ofFbo renderFbo;
+
+	ofCamera cam;
+
+	Reader reader;
+
+	bool autokey{ false };
 };
 
 void showGrassblade();
