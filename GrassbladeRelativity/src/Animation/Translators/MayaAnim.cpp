@@ -11,12 +11,12 @@ namespace {
 namespace Animation {
 	namespace Translators {
 		namespace MayaAnim {
-			std::vector<Animation::AnimCurve> import(std::string filepath) {
+			std::vector<Animation::AnimationCurve> import(std::string filepath) {
 				/*
 				create AnimCurves from maya .anim file
 				see maya file formats: https://courses.cs.washington.edu/courses/cse459/06wi/help/mayaguide/Reference/FileFormats.pdf
 				*/
-				std::vector<Animation::AnimCurve> curves;
+				std::vector<Animation::AnimationCurve> curves;
 
 				// load file
 				std::ifstream file(filepath);
@@ -35,7 +35,7 @@ namespace Animation {
 
 						while (getline(file, line)) {
 							if (line == "  keys {") { // begin keys
-								Animation::AnimCurve curve;
+								Animation::AnimationCurve curve;
 
 								curve.label = node_name + "." + leaf_attribute_name;
 								while (getline(file, line)) {
@@ -57,7 +57,7 @@ namespace Animation {
 				}
 				std::cout << "imported " << curves.size() << "curves: ";
 				for (auto & curve : curves) {
-					std::cout << "- " << curve.label << " with " << curve.getKeys().size() << " keys";
+					std::cout << "- " << curve.label << " with " << curve.keys().size() << " keys";
 				}
 				return curves;
 			}

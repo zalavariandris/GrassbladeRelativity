@@ -1,5 +1,6 @@
 
-#include "../Widgets/Widgets.hpp"
+#include "../Widgets/Timeslider.hpp"
+#include "../Widgets/Grapheditor.hpp"
 #include "../Im2D/Im2D.h"
 #include "../Im2D/im2d_draw.h"
 #include "../Paper/Path.h"
@@ -18,6 +19,66 @@
 #include "grassblade_utilities.h"
 
 #include <future>
+#include <chrono>
+#include <opencv2/opencv.hpp>
+
+#include <map>
+
+cv::Mat renderSingle(
+	int frame, int w, int h,
+	Reader * reader, Paper::Path sourcePath, Animation::AnimationCurve Ax, Animation::AnimationCurve Ay, Paper::Path targetPath,
+	double * progress = nullptr)
+{
+	// get video image
+	cv::Mat videoMat;
+	resize(reader->getMatAtFrame(frame), videoMat, cv::Size(w, h));
+
+	// animate source path
+	sourcePath.getSegments()[0]->_point = glm::vec2({ Ax.getValueAtFrame(frame), Ay.getValueAtFrame(frame) });
+
+	// extend paths
+	auto extendedSourcePath = extend(sourcePath, 950);
+	auto extendedTargetPath = extend(targetPath, 950);
+
+	// deform image
+	cv::Mat map_x(videoMat.size(), CV_32FC1);
+	cv::Mat map_y(videoMat.size(), CV_32FC1);
+	Rect matRect({ 0,0 }, w, h);
+	Rect camRect({ -1920 / 2, -1080 / 2 }, 1920, 1080);
+	for (auto y = 0; y < videoMat.rows; y++)
+	{
+		for (auto x = 0; x < videoMat.cols; x++) {
+			if (progress) {
+				*progress = (double)y / videoMat.rows;
+			}
+			glm::vec2 P = Rect::map(glm::vec2(x, y), matRect, camRect);
+			glm::vec2 pos = Field::pathToPath(extendedSourcePath, extendedTargetPath, P);
+			pos = Rect::map(pos, camRect, matRect);
+			map_x.at<float>(y, x) = pos.x;
+			map_y.at<float>(y, x) = pos.y;
+		}
+	}
+	cv::Mat resultMat(videoMat.size(), videoMat.type());
+	cv::remap(videoMat, resultMat, map_x, map_y, cv::INTER_LINEAR);
+
+	return resultMat;
+};
+
+void renderSequence(
+	int start, int end, int w, int h,
+	Reader * reader, Paper::Path sourcePath, Paper::Path targetPath, Animation::AnimationCurve Ax, Animation::AnimationCurve Ay,
+	double * progress = nullptr
+) {
+	for (auto frame = start; frame < end; frame++) {
+		if (progress) {
+			*progress = (double)(frame - start) / (end - start);
+		}
+		cv::Mat image = renderSingle(frame, w, h, reader, sourcePath, Ax, Ay, targetPath, progress);
+		stringstream ss;
+		ss << "tmp/" << "IMG_6923_selfrelativity_" << std::setfill('0') << std::setw(5) << frame << ".png";
+		cv::imwrite(ss.str(), image);
+	}
+};
 
 Grassblade::Grassblade() {
 	// create plate
@@ -35,16 +96,15 @@ Grassblade::Grassblade() {
 	distortionTexture.allocate(1920, 1080, GL_RGBA32F);
 	renderFbo.allocate(1920, 1080, GL_RGBA32F);
 
-
 	// paths
 	sourcePath = Paper::Path({
 		std::make_shared<Paper::Segment>(glm::vec2(0,0)),
-		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,-50), glm::vec2(0,0))
+		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,0), glm::vec2(0,0))
 	});
 
 	targetPath = Paper::Path({
 		std::make_shared<Paper::Segment>(glm::vec2(0,0)),
-		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,-50), glm::vec2(0,0))
+		std::make_shared<Paper::Segment>(glm::vec2(0,100), glm::vec2(0,0), glm::vec2(0,0))
 	});
 
 	//
@@ -59,7 +119,7 @@ void Grassblade::save() {
 	j["movie"]["filename"] = moviefile;
 	j["deformFactor"] = deformFactor;
 	j["extensionLength"] = extensionLength;
-	j["animation"]["Ax"]["keys"] = Ax.getKeys();
+	j["animation"]["Ax"]["keys"] = Ax.keys();
 	j["sourcePath"]["segment1"]["point"]["x"] = sourcePath.getSegments()[1]->_point.x;
 	j["sourcePath"]["segment1"]["point"]["y"] = sourcePath.getSegments()[1]->_point.y;
 	j["sourcePath"]["segment1"]["handleIn"]["x"] = sourcePath.getSegments()[1]->_handleIn.x;
@@ -71,10 +131,6 @@ void Grassblade::save() {
 	cout << "save:" << endl << j.dump() << endl;
 }
 
-void Grassblade::render() {
-
-}
-
 void Grassblade::open() {
 	ofFile file;
 	if (!file.open(filepath)) cout << "cannot open file" << endl;
@@ -83,9 +139,9 @@ void Grassblade::open() {
 	file >> j;
 	file.close();
 
-	Ax.setKeys({ j["animation"]["Ax"]["keys"].get<std::vector<Animation::Key>>()});
+	Ax.setKeys({ j["animation"]["Ax"]["keys"].get<std::vector<Animation::Keyframe>>()});
 	Ax.label = "Ax";
-	Ay.setKeys( { Animation::Key(0,-140) } );
+	Ay.setKeys( { Animation::Keyframe(0,-140) } );
 	Ay.label = "Ay";
 	moviefile = j["movie"]["filename"].get<std::string>();
 	startTime = j.value("startTime", startTime);
@@ -103,7 +159,7 @@ void Grassblade::open() {
 
 void Grassblade::importKeysFromAE() {
 	std::string filename{ ofToDataPath("projects/aeKeyframesData.txt") };
-	std::vector<Animation::AnimCurve> curves = Animation::Translators::AEAnimationData::import(filename);
+	std::vector<Animation::AnimationCurve> curves = Animation::Translators::AEAnimationData::import(filename);
 
 	cout << curves.size() << " anim curves imported from: " << filename << endl;
 
@@ -113,15 +169,15 @@ void Grassblade::importKeysFromAE() {
 
 void Grassblade::importKeysFromMaya() {
 	std::string filename{ "C:/Users/andris/Desktop/grassrelativityfootage/anim_6923_v04.anim" };
-	std::vector<Animation::AnimCurve> curves = Animation::Translators::MayaAnim::import(filename);
+	std::vector<Animation::AnimationCurve> curves = Animation::Translators::MayaAnim::import(filename);
 
 	cout << curves.size() << " anim curves imported from: " << filename << endl;
 
-	for (auto & key : curves[0].getKeys()) {
-		key.value *= 100;
+	for (auto & key : curves[0].keys()) {
+		key.value(key.value() * 100);
 	}
-	for (auto & key : curves[1].getKeys()) {
-		key.value *= -100;
+	for (auto & key : curves[1].keys()) {
+		key.value(key.value() * -100);
 	}
 	Ax = curves[0];
 	Ay = curves[1];
@@ -130,7 +186,7 @@ void Grassblade::importKeysFromMaya() {
 void Grassblade::onGui() {
 	/* VIEWER */
 	ImGui::Begin("Viewer");
-	Im2D::ViewerBegin("viewport");
+	Im2D::BeginViewer("viewport");
 
 	glm::vec2 P1 = sourcePath.getSegments()[0]->_point;
 	if (Im2D::DragPoint("P1", &P1)) {
@@ -140,6 +196,7 @@ void Grassblade::onGui() {
 			Ay.setValueAtFrame(P1.y, F);
 		}
 	}
+
 	glm::vec2 h2 = sourcePath.getSegments()[1]->_point+sourcePath.getSegments()[1]->_handleIn;
 	if (Im2D::DragPoint("h2", &h2)) {
 		sourcePath.getSegments()[1]->_handleIn = h2 - sourcePath.getSegments()[1]->_point;
@@ -147,7 +204,7 @@ void Grassblade::onGui() {
 
 	Im2D::DragPoint("p2", &sourcePath.getSegments()[1]->_point);
 
-	Im2D::ViewerEnd();
+	Im2D::EndViewer();
 	ImGui::End();
 
 	/* INSPECTOR */
@@ -197,29 +254,31 @@ void Grassblade::onGui() {
 
 	/* TIME SLIDER */
 	ImGui::Begin("TimeSlider");
-	Widgets::TimeSlider("TimeSlider", &F, &play, &startTime, &endTime);
+	Widgets::Timeslider("Timeslider", &F, &play, &startTime, &endTime);
 	ImGui::End();
 
 	/* GRAPH EDITOR */
-	ImGui::Begin("GraphEditor");
-	std::vector<Animation::AnimCurve*> curves = { &Ax, &Ay};
-	Widgets::GraphEditor("GraphEditor", curves, &F);
+	ImGui::Begin("Grapheditor");
+	std::vector<Animation::AnimationCurve*> curves = { &Ax, &Ay};
+	Widgets::Grapheditor("GraphEditor", curves, &F);
 
-	// handle shortcuts
-	if (ImGui::IsKeyPressed(83/*s*/)) {
-		for (Animation::AnimCurve * animCurve : curves) {
-			if (animCurve->hasKeyAtFrame(F)) {
-				animCurve->removeKeyAtFrame(F);
-			}
-			else {
-				animCurve->insertKeyAtFrame(F);
-			}
-		}
-	}
+	//// handle shortcuts
+	//if (ImGui::IsKeyPressed(83/*s*/)) {
+	//	for (Animation::AnimationCurve * animCurve : curves) {
+	//		if (animCurve->hasKeyAtFrame(F)) {
+	//			animCurve->removeKeyAtFrame(F);
+	//		}
+	//		else {
+	//			animCurve->insertKeyAtFrame(F);
+	//		}
+	//	}
+	//}
 	ImGui::End();
+	ShowRender();
+	ShowPreview();
 }
 
-void Grassblade::draw() {
+void Grassblade::tick() {
 	/* -----------------------------------
 	   TIME
 	   -----------------------------------*/
@@ -228,37 +287,89 @@ void Grassblade::draw() {
 	if (play && F > endTime)
 		F = startTime;
 
-	// sync ofCamera to viewer
-	ImGui::SetNextWindowBgAlpha(0.0);
-	static bool ViewerOpen{ true };
-	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
-	Im2D::ViewerBegin("viewport");
-	Utils::ofSyncCameraToViewport(cam);
-	Im2D::ViewerEnd();
-	ImGui::End();
+	onGui();
+};
 
-	/* -----------------------------------
-	   Create target Path
-	   -----------------------------------*/
-	auto & currentImage = reader.getImageAtFrame(F);
-	//currentImage.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+void Grassblade::ShowRender() {
+	static int renderSize[2]{ reader.getWidth(), reader.getHeight() };
+	static int sequenceStart{ startTime };
+	static int sequenceEnd{ endTime };
+	static double renderSequenceProgress{ 0 };
+	static double renderSingleProgress{ 0 };
+
+	ImGui::Begin("Render");
+	ImGui::InputInt2("renderSize", renderSize);
+	if(ImGui::CollapsingHeader("RenderSingle", ImGuiTreeNodeFlags_DefaultOpen)){
+		// render single ui
+		static ofImage renderSingleImage;
+		static std::future<cv::Mat> renderSingleFuture;
+		if (!renderSingleFuture.valid() && ImGui::Button("render single")) {
+			// launch
+			renderSingleFuture = std::async(std::launch::async, renderSingle, 
+				F, renderSize[0], renderSize[1], 
+				&reader, sourcePath, Ax, Ay, targetPath, &renderSingleProgress);
+				
+				//&reader, renderSize[0], renderSize[1], sourcePath, Ax, Ay, targetPath, F, &renderSingleProgress);
+		}
+		else if (renderSingleFuture.valid() && renderSingleFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+			// done
+			cv::Mat renderedImage = renderSingleFuture.get();
+			cv::Mat rgb;
+			cv::cvtColor(renderedImage, rgb, CV_BGR2RGB);
+			renderSingleImage.setFromPixels(rgb.data, rgb.cols, rgb.rows, ofGetImageTypeFromGLType(GL_RGB));
+			renderSingleProgress = -1;
+		}
+		else if (renderSingleFuture.valid()) {
+			// progress
+			ImGui::Text("rendering single..."); ImGui::SameLine();
+			ImGui::ProgressBar(renderSingleProgress, ImVec2(-1, 0));
+		}
+		else if (renderSingleImage.isAllocated()) {
+			// display results
+			ImGui::Image((void*)renderSingleImage.getTexture().getTextureData().textureID, ImVec2(192, 108));
+		}
+	}
+
+	// render sequence ui
+	if (ImGui::CollapsingHeader("Render Sequence", ImGuiTreeNodeFlags_DefaultOpen)) {
+		static std::future<void> renderSequenceFuture;
+		ImGui::InputInt("start", &sequenceStart);
+		ImGui::InputInt("end", &sequenceEnd);
+		if (!renderSequenceFuture.valid() && ImGui::Button("render sequence")) {
+			// launch
+			renderSequenceFuture = std::async(std::launch::async, renderSequence, sequenceStart, sequenceEnd, renderSize[0], renderSize[1], &reader, sourcePath, targetPath, Ax, Ay, &renderSequenceProgress);
+		}
+		else if (renderSequenceFuture.valid() && renderSequenceFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+			//done
+			renderSequenceProgress = 1.0;
+		}
+		else if (renderSequenceFuture.valid()) {
+			// progress
+			ImGui::Text("rendering sequence..."); ImGui::SameLine();
+			ImGui::ProgressBar(renderSequenceProgress, ImVec2(-1, 0));
+		}
+		else {
+			// display results
+		}
+	}
+	ImGui::End();
+}
+
+
+void Grassblade::ShowPreview() {
+	// Process preview
+	// get video image
+	ofImage videoImage;
+	videoImage = reader.getImageAtFrame(F);
 
 	// animate source path
 	sourcePath.getSegments()[0]->_point = glm::vec2({ Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) });
 
 	// extend paths
-	Paper::Path extendedSourcePath = extend(sourcePath, extensionLength);
-	Paper::Path extendedTargetPath = extend(targetPath, extensionLength);
+	auto extendedSourcePath = extend(sourcePath, 950);
+	auto extendedTargetPath = extend(targetPath, 950);
 
-
-	// draw extended paths
-	cam.begin();
-	ofSetColor(ofColor::white);
-	Utils::ofDraw(extendedSourcePath);
-	Utils::ofDraw(extendedTargetPath);
-	cam.end();
-
-	// Deform plate with paths
+	// deform plate
 	if (deformFactor > 0) {
 		auto & mesh = plate.getMesh();
 		for (auto i = 0; i < mesh.getVertices().size(); i++) {
@@ -270,35 +381,59 @@ void Grassblade::draw() {
 		}
 	}
 
-	//// display deformation field
-	//ImGui::Begin("Viewer");
-	//Im2D::ViewerBegin("viewport");
-	//addField({ sourcePath.getSegments()[0]->_point }, [&](glm::vec2 P)->glm::vec2 {
-	//	return Field::pathToPath(extendedSourcePath, extendedTargetPath, P);
-	//});
-	//Im2D::ViewerEnd();
-	//ImGui::End();
+	// display
+	// sync ofCamera to viewer
+	ImGui::SetNextWindowBgAlpha(0.0);
+	static bool ViewerOpen{ true };
+	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
+	Im2D::BeginViewer("viewport");
+	Utils::ofSyncCameraToViewport(cam);
+	Im2D::EndViewer();
+	ImGui::End();
+
+	// draw extended paths
+	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
+	Im2D::BeginViewer("viewport");
+	for (auto const & curve : extendedSourcePath.getCurves()) {
+		auto A = curve->_segment1->_point;
+		auto B = A + curve->_segment1->_handleOut;
+		auto D = curve->_segment2->_point;
+		auto C = D + curve->_segment2->_handleIn;
+		addBezierCurve(A, B, C, D, ImColor(255,255,255), 1);
+
+		addPoint(A, ImColor(255,255,255), 4.0);
+		addPoint(B, ImColor(255, 255, 255), 4.0);
+		addPoint(C, ImColor(255, 255, 255), 4.0);
+		addPoint(D, ImColor(255, 255, 255), 4.0);
+		addLineSegment(A, B, ImColor(255, 255, 255), 1);
+		addLineSegment(C, D, ImColor(255, 255, 255), 1);
+	}
+	Im2D::EndViewer();
+	ImGui::End();
+
 
 	// draw image plate
+	// get video image frame
 	cam.begin();
 	ofSetColor(ofColor::cadetBlue);
 	ofSetColor(ofColor::white);
-	currentImage.bind();
+	videoImage.bind();
 	plate.draw(OF_MESH_FILL);
 	ofSetColor(ofColor(255, 40));
-	currentImage.unbind();
+	videoImage.unbind();
 	//plate.draw(OF_MESH_WIREFRAME);
 	//ofSetColor(ofColor::white);
-	Utils::ofDraw(sourcePath);
-	Utils::ofDraw(targetPath);
+	//ofSetColor(ofColor::white);
+	//Utils::ofDraw(extendedSourcePath);
+	//Utils::ofDraw(targetPath);
 	cam.end();
 
 
 	// show closest point
 	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
-	Im2D::ViewerBegin("viewport");
+	Im2D::BeginViewer("viewport");
 	glm::vec2 mousePoint = Im2D::GetMousePos();
-	Im2D::ViewerEnd();
+	Im2D::EndViewer();
 	ImGui::End();
 	double closestTime;
 	glm::vec2 closestPoint;
@@ -307,78 +442,8 @@ void Grassblade::draw() {
 	cam.begin();
 	ofDrawCircle(closestPoint, 10);
 	cam.end();
-
-	onGui();
-
-	ImGui::Begin("Render");
-	int distortion_size[2]{ distortionTexture.getWidth(), distortionTexture.getHeight() };
-	if (ImGui::DragInt2("distortion size", distortion_size, 1.0, 2, 1920)) {
-		distortionTexture.allocate(distortion_size[0], distortion_size[1], GL_RGB32F);
-	}
-	int renderfbo_size[2]{ renderFbo.getWidth(), renderFbo.getHeight() };
-	if (ImGui::DragInt2("renderfbo size", renderfbo_size, 1.0, 2, 1920)) {
-		renderFbo.allocate(renderfbo_size[0], renderfbo_size[1], GL_RGB32F);
-	}
-
-	//ASYNC RENDER
-	Rect reader_rect({ -1920 / 2, -1080 / 2 }, 1920, 1080);
-	Rect distortion_rect({ 0,0 }, distortionTexture.getWidth(), distortionTexture.getHeight());
-	static double renderProgress{ 0 };
-	static std::future<ofFloatPixels> result;
-	auto renderasync = [this, distortion_rect, reader_rect, extendedTargetPath, extendedSourcePath]() {
-		const int w = distortion_rect.width;
-		const int h = distortion_rect.height;
-		const int c = 4;
-		std::vector<float> pixels(w*h*c);
-		for (int i = 0; i < w * h; i++) {
-			int x = i % w;
-			int y = i / w;
-
-			auto P = Rect::map({ x, y }, distortion_rect, reader_rect);
-			glm::vec2 pos = Field::pathToPath(extendedTargetPath, extendedSourcePath, P);
-
-			// map from 1080p to [0-1]
-			pos = Rect::map(pos, reader_rect, { {0,0},1,1 });
-			glm::vec4 color = glm::vec4(pos[0], pos[1], 0, 1);
-
-			// fill data
-			for (auto j = 0; j < c; j++) {
-				pixels[i * c + j] = color[j];
-			}
-
-			renderProgress = (double)i / (w*h);
-		}
-
-		// upload data to GPU
-		ofFloatPixels pix;
-		pix.setFromPixels(pixels.data(), w, h, ofGetImageTypeFromGLType(GL_RGBA32F));
-		
-		//delete[] data;
-		return pix;
-	};
-
-	if (!result.valid() && ImGui::Button("launch async render")) {
-		result = std::async(std::launch::async, renderasync);
-	}
-	if(result.valid()) {
-		ImGui::Text("rendering... %.0f%s", renderProgress*100, "%");
-	}
-	if (result.valid() && result.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-		auto pix = result.get();
-		distortionTexture.loadData(pix);
-		distort(reader.getImageAtFrame(F).getTexture(), distortionTexture, &renderFbo);
-	}
-
-	ImGui::Image((void*)distortionTexture.getTextureData().textureID, ImVec2(192, 108));
-	ImGui::Image((void*)renderFbo.getTexture().getTextureData().textureID, ImVec2(192, 108));
-	ImGui::End();
-};
+}
 
 Grassblade::~Grassblade() {
 	save();
 };
-
-void showGrassblade() {
-	static Grassblade grass;
-	grass.draw();
-}

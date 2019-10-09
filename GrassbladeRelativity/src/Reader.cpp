@@ -33,31 +33,28 @@ bool Reader::setFile(std::string filepath) {
 	}
 }
 
-uchar* Reader::getDataAtFrame(int frame) {
+cv::Mat Reader::getMatAtFrame(int frame) {
 	if (!validateFrame(frame)) {
-		return nullptr;
+		return cv::Mat();
 	}
-	else if (frame == getCurrentFrame()) {
-		return buffer.data;
+
+
+	if (frame == getCurrentFrame()) {
+		return buffer;
 	}
 	else if (frame == getCurrentFrame() + 1) {
 		// play next frame
-		cv::Mat mat;
-		_cap.read(mat);
-		cv::cvtColor(mat, buffer, CV_BGR2RGB);
-
-		return buffer.data;
+		_cap.read(buffer);
+		return buffer;
 	}
 	else {
 		// seek to specified frame
 		_cap.set(cv::CAP_PROP_POS_FRAMES, frame);
 
 		// read and convert to rgb
-		cv::Mat mat;
-		_cap >> mat;
-		cv::cvtColor(mat, buffer, CV_BGR2RGB);
+		_cap >> buffer;
 
-		return buffer.data;
+		return buffer;
 	}
 }
 
@@ -102,15 +99,19 @@ ofImage Reader::getImageAtFrame(int frame) {
 	if (!validateFrame(frame))
 		return ofImage();
 
-	if (cache.find(frame) != cache.end()) {
-		return cache[frame];
-	}
+	if (imageCache.find(frame) != imageCache.end())
+		return imageCache[frame];
 
 	// load to of image
 	ofImage img;
-	img.setFromPixels(getDataAtFrame(frame), getWidth(), getHeight(), OF_IMAGE_COLOR, false);
+
+	cv::Mat rgb;
+	cv::Mat mat = getMatAtFrame(frame);
+	cv::cvtColor(buffer, rgb, CV_BGR2RGB);
+
+	img.setFromPixels(rgb.data, getWidth(), getHeight(), OF_IMAGE_COLOR, false);
 	img.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-	cache.clear();
-	cache[frame] = img;
+	imageCache.clear();
+	imageCache[frame] = img;
 	return img;
 }

@@ -60,7 +60,8 @@ namespace Paper {
 			// Prevent tangents and normals of length 0:
 			// https://stackoverflow.com/questions/10506868/
 			double x, y;
-			if (t < tMin) {
+			
+			if (t < tMin) { 
 				x = cx;
 				y = cy;
 			}
@@ -68,10 +69,12 @@ namespace Paper {
 				x = 3 * (x3 - x2);
 				y = 3 * (y3 - y2);
 			}
+
 			else {
 				x = (3 * ax * t + 2 * bx) * t + cx;
 				y = (3 * ay * t + 2 * by) * t + cy;
 			}
+
 			if (normalized) {
 				// When the tangent at t is zero and we're at the beginning
 				// or the end, we can use the vector between the handles,
@@ -107,6 +110,7 @@ namespace Paper {
 				normal->y = -x;
 			}
 		}
+
 		return true;
 	}
 
@@ -265,46 +269,10 @@ namespace Paper {
 	}
 
 	glm::vec2 Curve::getPointAtTime(double t) const {
-		// Do not produce results if parameter is out of range or invalid.
-		if (isnan(t) || t < 0 || t > 1)
+		glm::vec2 point;
+		if (!evaluate2(getValues(), t, &point))
 			return glm::vec2(NAN);
-
-		auto v = getValues();
-
-		double x0 = v[0]; double y0 = v[1];
-		double x1 = v[2]; double y1 = v[3];
-		double x2 = v[4]; double y2 = v[5];
-		double x3 = v[6]; double y3 = v[7];
-
-		// If the curve handles are almost zero, reset the control points to the
-		// anchors.
-		if (Numerical::isZero(x1 - x0) && Numerical::isZero(y1 - y0)) {
-			x1 = x0;
-			y1 = y0;
-		}
-		if (Numerical::isZero(x2 - x3) && Numerical::isZero(y2 - y3)) {
-			x2 = x3;
-			y2 = y3;
-		}
-
-		// Calculate the polynomial coefficients.
-		double cx = 3 * (x1 - x0);
-		double bx = 3 * (x2 - x1) - cx;
-		double ax = x3 - x0 - cx - bx;
-		double cy = 3 * (y1 - y0);
-		double by = 3 * (y2 - y1) - cy;
-		double ay = y3 - y0 - cy - by;
-
-		// type === 0: getPoint()
-		// Calculate the curve point at parameter value t
-		// Use special handling at t === 0 / 1, to avoid imprecisions.
-		// See #960
-		return glm::vec2(
-			t == 0 ? x0 : t == 1 ? x3
-			: ((ax * t + bx) * t + cx) * t + x0,
-			t == 0 ? y0 : t == 1 ? y3
-			: ((ay * t + by) * t + cy) * t + y0
-		);
+		return point;
 	};
 
 	glm::vec2 Curve::getTangentAtTime(double t) const {

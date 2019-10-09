@@ -19,7 +19,7 @@ glm::vec2 fromScreen(glm::vec2 P) {
 	return glm::vec2(result.x, result.y);
 }
 
-void addPoint(glm::vec2 P, ImColor color, double r) {
+void addPoint(glm::vec2 P, ImColor color, float r) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	glm::vec2 P1 = toScreen(P);
 	window->DrawList->AddCircleFilled(ImVec2(P1.x, P1.y), r, color);
@@ -33,7 +33,7 @@ void addLineSegment(const glm::vec2 & A, const glm::vec2 & B, ImColor color, flo
 	window->DrawList->AddLine(ImVec2(A1.x, A1.y), ImVec2(B1.x, B1.y), color, thickness);
 }
 
-void addRect(glm::vec2 center, double width, double height, ImColor color, float thickness) {
+void addRect(glm::vec2 center, float width, float height, ImColor color, float thickness) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	glm::vec2 P = toScreen(center);
 
@@ -160,14 +160,20 @@ glm::vec2 cubicBezier(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, double
 	return P3;
 }
 
-void addBezierSegment(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D) {
-	const int segments{ 16 };
-	glm::vec2 points[segments + 1];
-	for (auto i = 0; i < segments + 1; i++) {
-		glm::vec2 P = cubicBezier(A, B, C, D, (double)i / segments);
-		points[i] = P;
-	}
-	for (auto i = 0; i < segments; i++) {
-		addLineSegment(points[i], points[i + 1], ImColor(255, 255, 255, 255), 1.0);
-	}
+//void addBezierSegment(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D) {
+//	const int segments{ 16 };
+//	glm::vec2 points[segments + 1];
+//	for (auto i = 0; i < segments + 1; i++) {
+//		glm::vec2 P = cubicBezier(A, B, C, D, (double)i / segments);
+//		points[i] = P;
+//	}
+//	for (auto i = 0; i < segments; i++) {
+//		addLineSegment(points[i], points[i + 1], ImColor(255, 255, 255, 255), 1.0);
+//	}
+//}
+
+void addBezierCurve(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, 
+	ImColor color, float thickness, int num_segments) {
+	ImGuiWindow * window = ImGui::GetCurrentWindow();
+	window->DrawList->AddBezierCurve(toScreen(A), toScreen(B), toScreen(C), toScreen(D), color, thickness, num_segments);
 }

@@ -34,7 +34,7 @@ glm::vec2 Im2D::GetMouseDelta() {
 
 bool Im2D::DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D) {
 	// draw curve
-	addBezierSegment(*A, *B, *C, *D);
+	addBezierCurve(*A, *B, *C, *D);
 	
 	// draw tangents
 	addLineSegment(*A, *B);
@@ -122,7 +122,7 @@ bool ScreenControls(const char * str_id, const ImVec2 & size, glm::mat3 * viewMa
 	return changed;
 }
 
-void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFlags flags) {
+void Im2D::BeginViewer(const char* label_id, const ImVec2 & size, Im2DViewportFlags flags) {
 	assert(GetCurrentContext()->CurrentViewer == nullptr); /* missing end of the last viewer*/
 
 	ImGui::BeginChild(label_id, size, true,
@@ -181,7 +181,7 @@ void Im2D::ViewerBegin(const char* label_id, const ImVec2 & size, Im2DViewportFl
 	}
 }
 
-void Im2D::ViewerEnd() {
+void Im2D::EndViewer() {
 	Im2DContext * ctx = GetCurrentContext();
 	ctx->CurrentViewer = nullptr;
 	ImGui::EndChild();
@@ -240,4 +240,15 @@ bool Im2D::DragPoint(const char * label_id, glm::vec2 * P, float radius) {
 	addText(*P+offset, fmt, P->x, P->y);
 
 	return changed;
+}
+
+void Im2D::Image(glm::vec2 pos, ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col) {
+	ImGuiWindow * window = ImGui::GetCurrentWindow();
+	Im2DContext * ctx = Im2D::GetCurrentContext();
+	auto topLeft = pos;
+	auto bottomRight = glm::vec2(size.x, size.y);
+	auto screenPos = toScreen(topLeft);
+	auto screenSize = toScreen(bottomRight)- screenPos;
+	ImGui::SetCursorScreenPos(ImVec2(screenPos.x, screenPos.y));
+	ImGui::Image(user_texture_id, ImVec2(screenSize.x, screenSize.y), uv0, uv1, tint_col, border_col);
 }

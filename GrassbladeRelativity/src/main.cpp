@@ -4,7 +4,7 @@
 int main( ){
 	ofGLFWWindowSettings settings;
 	settings.setGLVersion(4, 1); //we define the OpenGL version we want to use
-	settings.setSize(1200, 720);
+	settings.setSize(1200*2, 720*2);
 
 	ofCreateWindow(settings);
 	// this kicks off the running of my app

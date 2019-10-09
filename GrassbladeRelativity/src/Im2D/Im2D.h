@@ -23,9 +23,9 @@ struct Im2DContext {
 namespace Im2D {
 	Im2DContext * GetCurrentContext();
 
-	void ViewerBegin(const char* label_id, const ImVec2 & size = ImVec2(0, 0), Im2DViewportFlags flags= Im2DViewportFlags_Grid);
+	void BeginViewer(const char* label_id, const ImVec2 & size = ImVec2(0, 0), Im2DViewportFlags flags= Im2DViewportFlags_Grid);
 
-	void ViewerEnd();
+	void EndViewer();
 
 	glm::vec2 getZoom();
 	glm::vec2 getPan();
@@ -41,6 +41,10 @@ namespace Im2D {
 	bool Button(const char * label_id, glm::vec2 pos, double width, double height);
 	bool DragPoint(const char * label_id, glm::vec2 * P, float radius = 8);
 	bool DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D);
-
+	void Image(glm::vec2 center, ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 	// Items
+
 }
+
+
+

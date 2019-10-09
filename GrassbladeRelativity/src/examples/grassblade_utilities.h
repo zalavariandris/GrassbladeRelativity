@@ -136,22 +136,22 @@ namespace serialize {
 }
 
 namespace Animation {
-	void to_json(json& j, const Key& key) {
-		j = { key.frame ,  key.value };
+	void to_json(json& j, const Keyframe& key) {
+		j = { key.time() ,  key.value() };
 	};
 
-	void from_json(const json& j, Key& key) {
-		key.frame = j.at(0).get<double>();
-		key.value = j.at(1).get<double>();
+	void from_json(const json& j, Keyframe& key) {
+		key.time(j.at(0).get<double>());
+		key.value(j.at(1).get<double>());
 	}
 }
 
 Paper::Path extend(Paper::Path path, double length) {
 	Paper::Path newPath{ path };
-	auto firstLocation0 = newPath.getLocationAtTime(0);
-	auto lastLocation0 = newPath.getLocationAtTime(1.0);
-	newPath.insert(0, std::make_shared<Paper::Segment>(firstLocation0._point - firstLocation0._tangent*length));
-	newPath.add(std::make_shared<Paper::Segment>(lastLocation0._point + lastLocation0._tangent*length));
+	auto firstLocation = newPath.getLocationAtTime(0);
+	auto lastLocation = newPath.getLocationAtTime(1.0);
+	newPath.insert(0, std::make_shared<Paper::Segment>(firstLocation._point - firstLocation._tangent*length));
+	newPath.add(      std::make_shared<Paper::Segment>(lastLocation._point + lastLocation._tangent*length));
 	return newPath;
 }
 

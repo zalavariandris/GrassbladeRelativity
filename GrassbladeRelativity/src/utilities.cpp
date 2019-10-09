@@ -70,7 +70,7 @@ void Utils::ofDraw(Paper::Path path, bool verbose) {
 	}
 }
 
-void Utils::addTrajectory(Animation::AnimCurve const & x, Animation::AnimCurve const & y, int from, int to) {
+void Utils::addTrajectory(Animation::AnimationCurve const & x, Animation::AnimationCurve const & y, int from, int to) {
 	for (auto f = from; f < to; f++) {
 		glm::vec2 A = glm::vec2(x.getValueAtFrame(f), y.getValueAtFrame(f));
 		glm::vec2 B = glm::vec2(x.getValueAtFrame(f + 1), y.getValueAtFrame(f + 1));

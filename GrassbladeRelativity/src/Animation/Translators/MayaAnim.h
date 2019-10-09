@@ -4,12 +4,12 @@
 #include <iostream>
 #include <sstream>
 
-#include "../AnimCurve.h"
+#include "../AnimationCurve.h"
 
 namespace Animation {
 	namespace Translators {
 		namespace MayaAnim {
-			std::vector<Animation::AnimCurve> import(std::string filepath);
+			std::vector<Animation::AnimationCurve> import(std::string filepath);
 		}
 	}
 }

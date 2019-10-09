@@ -66,7 +66,8 @@
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world411d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core411.lib;opencv_imgproc411.lib;opencv_imgcodecs411.lib;opencv_videoio411.lib;opencv_shape411.lib;opencv_core411d.lib;opencv_imgproc411d.lib;opencv_imgcodecs411d.lib;opencv_videoio411d.lib;opencv_shape411d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
     </PostBuildEvent>
@@ -91,7 +92,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world411.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core411.lib;opencv_imgproc411.lib;opencv_imgcodecs411.lib;opencv_videoio411.lib;opencv_shape411.lib;opencv_core411d.lib;opencv_imgproc411d.lib;opencv_imgcodecs411d.lib;opencv_videoio411d.lib;opencv_shape411d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
     </PostBuildEvent>
@@ -109,8 +110,9 @@
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
+    <ClCompile Include="src\Animation\AnimationCurve.cpp" />
+    <ClCompile Include="src\Animation\Keyframe.cpp" />
     <ClCompile Include="src\Paper\basic\Line.cpp" />
-    <ClCompile Include="src\Animation\AnimCurve.cpp" />
     <ClCompile Include="src\Animation\Translators\AEAnimationData.cpp" />
     <ClCompile Include="src\Animation\Translators\MayaAnim.cpp" />
     <ClCompile Include="src\examples\grassblade.cpp" />
@@ -125,7 +127,8 @@
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\Paper\numerical.cpp" />
     <ClCompile Include="src\utilities.cpp" />
-    <ClCompile Include="src\Widgets\Widgets.cpp" />
+    <ClCompile Include="src\Widgets\Grapheditor.cpp" />
+    <ClCompile Include="src\Widgets\Timeslider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
@@ -145,12 +148,17 @@
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
     <ClInclude Include="json.hpp" />
+    <ClInclude Include="src\Animation\AnimationCurve.h" />
+    <ClInclude Include="src\Animation\Keyframe.h" />
+    <ClInclude Include="src\examples\animcurvedemo.h" />
     <ClInclude Include="src\examples\grassblade_utilities.h" />
+    <ClInclude Include="src\Project.h" />
+    <ClInclude Include="src\examples\ThinGrass.h" />
+    <ClInclude Include="src\experimental\DAG.h" />
     <ClInclude Include="src\Paper\basic\Point.h" />
     <ClInclude Include="src\Paper\basic\Line.h" />
     <ClInclude Include="src\Animation\Translators\AEAnimationData.h" />
     <ClInclude Include="src\Animation\Translators\MayaAnim.h" />
-    <ClInclude Include="src\Animation\AnimCurve.h" />
     <ClInclude Include="src\examples\demos.h" />
     <ClInclude Include="src\examples\grassblade.h" />
     <ClInclude Include="src\examples\json_example.h" />
@@ -168,7 +176,8 @@
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\Paper\numerical.h" />
     <ClInclude Include="src\utilities.h" />
-    <ClInclude Include="src\Widgets\Widgets.hpp" />
+    <ClInclude Include="src\Widgets\Grapheditor.hpp" />
+    <ClInclude Include="src\Widgets\Timeslider.hpp" />
     <ClInclude Include="src\examples\widgets_demo.h" />
   </ItemGroup>
   <ItemGroup>

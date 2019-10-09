@@ -1,12 +1,24 @@
 #include "ofApp.h"
 #include "examples/grassblade.h"
+#include "examples/ThinGrass.h"
 //#include "examples/im2d_demos.h"
 //#include "examples/json_example.h"
-
+#include "examples/animcurvedemo.h"
 void ofApp::setup() {
 	/* imgui */
+	ImGuiIO& io = ImGui::GetIO();
+	//ImFont* font1 = io.Fonts->AddFontDefault();
+	font1 = io.Fonts->AddFontFromFileTTF(ofToDataPath("segoe-ui.ttf").c_str(), 13.0*2);
+	auto & style = ImGui::GetStyle();
+	style.ScaleAllSizes(2.0);
+	style.TabRounding = 0.0;
+	style.WindowMenuButtonPosition = ImGuiDir_Right;
 	gui.setup();
-	auto & io = ImGui::GetIO();
+
+
+
+
+	
 	io.FontGlobalScale = 1.0;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingWithShift = true;
@@ -110,12 +122,20 @@ void ShowDockSpace()
 
 void ofApp::draw() {
 	gui.begin();
+	
 	ShowDockSpace();
-	showGrassblade();
+
+
+	//static ThinGrass thinGrass;
+	//thinGrass.tick();
+	//static AnimcurveDemo demo;
+	//demo.tick();
+	static Grassblade grassbalde;
+	grassbalde.tick();
+	//showGrassblade();
 	//showJsonExample();
 
 	//static AEKeyframes aeKeyframes;
 	//aeKeyframes.show();
-
 	gui.end();
 }

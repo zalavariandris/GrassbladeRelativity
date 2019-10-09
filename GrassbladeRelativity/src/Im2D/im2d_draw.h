@@ -7,7 +7,7 @@
 glm::vec2 toScreen(glm::vec2 P);
 glm::vec2 fromScreen(glm::vec2 P);
 
-void addPoint(glm::vec2 P, ImColor color = ImColor(256, 256, 256), float r = 8);
+void addPoint(glm::vec2 P, ImColor color = ImColor(255, 255, 255), float r = 8);
 
 void addLineSegment(const glm::vec2 & A, const glm::vec2 & B, ImColor color = ImColor(255, 255, 255), float thickness = 1.0);
 
@@ -18,8 +18,11 @@ void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color, float thi
 
 void addAdaptiveGrid();
 
-glm::vec2 cubicBezier(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, float t);
+glm::vec2 cubicBezier(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, double t);
 
-void addBezierSegment(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D);
+//void addBezierSegment(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D);
 
-void addRect(glm::vec2 center, double width, double height, ImColor color=ImColor(255,255,255), float thickness=1.0);
+void addBezierCurve(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D, 
+	ImColor color = ImColor(255, 255, 255), float thickness = 1.0, int num_segments = 0);
+
+void addRect(glm::vec2 center, float width, float height, ImColor color=ImColor(255,255,255), float thickness=1.0);

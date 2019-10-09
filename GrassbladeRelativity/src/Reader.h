@@ -10,10 +10,6 @@
 #include <stdexcept>
 #include <map>
 class Reader {
-private:
-	/* show video file in case ther is no specidied */
-	uchar* getDataAtFrame(int frame);
-
 public:
 	Reader();
 	Reader(std::string file);
@@ -29,11 +25,12 @@ public:
 	bool setFile(std::string filepath);
 	std::string getFile() const;
 
+	cv::Mat getMatAtFrame(int frame);
 	ofImage getImageAtFrame(int frame);
 
 private:
 	std::string _filepath;
 	cv::VideoCapture _cap;
 	cv::Mat buffer;
-	std::map<int, ofImage> cache;
+	std::map<int, ofImage> imageCache;
 };

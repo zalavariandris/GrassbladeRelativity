@@ -35,13 +35,15 @@
     <ClCompile Include="src\Paper\CurveLocation.cpp" />
     <ClCompile Include="src\Reader.cpp" />
     <ClCompile Include="src\utilities.cpp" />
-    <ClCompile Include="src\Widgets\Widgets.cpp" />
     <ClCompile Include="src\examples\grassblade.cpp" />
     <ClCompile Include="src\Animation\Translators\MayaAnim.cpp" />
     <ClCompile Include="src\Animation\Translators\AEAnimationData.cpp" />
-    <ClCompile Include="src\Animation\AnimCurve.cpp" />
     <ClCompile Include="src\Paper\basic\Line.cpp" />
     <ClCompile Include="src\Paper\basic\Point.cpp" />
+    <ClCompile Include="src\Animation\Keyframe.cpp" />
+    <ClCompile Include="src\Animation\AnimationCurve.cpp" />
+    <ClCompile Include="src\Widgets\Grapheditor.cpp" />
+    <ClCompile Include="src\Widgets\Timeslider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -101,8 +103,6 @@
     <ClInclude Include="src\Reader.h" />
     <ClInclude Include="src\Geo\Basic.hpp" />
     <ClInclude Include="..\..\..\..\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\libs\imgui\imconfig.h" />
-    <ClInclude Include="src\Animation\AnimCurve.h" />
-    <ClInclude Include="src\Widgets\Widgets.hpp" />
     <ClInclude Include="src\utilities.h" />
     <ClInclude Include="src\examples\widgets_demo.h" />
     <ClInclude Include="src\examples\demos.h" />
@@ -116,6 +116,14 @@
     <ClInclude Include="src\Paper\basic\Line.h" />
     <ClInclude Include="src\Paper\basic\Point.h" />
     <ClInclude Include="src\examples\grassblade_utilities.h" />
+    <ClInclude Include="src\experimental\DAG.h" />
+    <ClInclude Include="src\examples\ThinGrass.h" />
+    <ClInclude Include="src\Project.h" />
+    <ClInclude Include="src\examples\animcurvedemo.h" />
+    <ClInclude Include="src\Animation\Keyframe.h" />
+    <ClInclude Include="src\Animation\AnimationCurve.h" />
+    <ClInclude Include="src\Widgets\Timeslider.hpp" />
+    <ClInclude Include="src\Widgets\Grapheditor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

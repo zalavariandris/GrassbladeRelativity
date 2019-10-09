@@ -8,14 +8,14 @@ using namespace std;
 namespace Animation {
 	namespace Translators {
 		namespace AEAnimationData {
-			std::vector<Animation::AnimCurve> import(string filepath) {
+			std::vector<Animation::AnimationCurve> import(string filepath) {
 				ifstream f(filepath);
 				if (!f.is_open()) {
 					cout << "error while opening file" << endl;
-					return std::vector<Animation::AnimCurve>();
+					return std::vector<Animation::AnimationCurve>();
 				}
 
-				std::vector<Animation::AnimCurve> curves;
+				std::vector<Animation::AnimationCurve> curves;
 
 				std::string line;
 
@@ -38,8 +38,8 @@ namespace Animation {
 
 					// process csv rows one by one
 					cout << "load keyframes" << endl;
-					curves.push_back(Animation::AnimCurve());
-					curves.push_back(Animation::AnimCurve());
+					curves.push_back(Animation::AnimationCurve());
+					curves.push_back(Animation::AnimationCurve());
 					while (std::getline(f, line) && line != "") {
 						std::string cell;
 						std::stringstream linestream(line);
