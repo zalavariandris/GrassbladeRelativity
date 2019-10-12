@@ -7,6 +7,8 @@
 
 
 /* utilities */
+Paper::Path extend(Paper::Path path, double length);
+
 namespace Utils{
 	void ofSyncCameraToViewport(ofCamera & camera);
 
@@ -18,3 +20,4 @@ namespace Utils{
 
 	void addTrajectory(Animation::AnimationCurve const & x, Animation::AnimationCurve const & y, int from, int to);
 }
+

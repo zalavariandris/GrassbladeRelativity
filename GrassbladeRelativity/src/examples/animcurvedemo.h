@@ -22,10 +22,6 @@ public:
 			{250, 100, Animation::Keyframe::Spline},
 			{500, -100, Animation::Keyframe::Spline }
 			});
-		static int resolution{ 8 };
-		ImGui::Begin("Inspector");
-		ImGui::SliderInt("resolution", &resolution, 4, 64);
-		ImGui::End();
 
 		ImGui::Begin("Grapheditor");
 		Widgets::Grapheditor("grapheditor", { &curve }, 0);

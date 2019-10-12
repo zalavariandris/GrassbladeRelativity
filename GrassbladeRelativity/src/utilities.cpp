@@ -8,6 +8,15 @@
 #include "ofGraphics.h"
 #include "ofAppRunner.h" //ofGetWidth(), ofGetHeight()
 
+Paper::Path extend(Paper::Path path, double length) {
+	Paper::Path newPath{ path };
+	auto firstLocation = newPath.getLocationAtTime(0);
+	auto lastLocation = newPath.getLocationAtTime(1.0);
+	newPath.insert(0, std::make_shared<Paper::Segment>(firstLocation._point - firstLocation._tangent*length));
+	newPath.add(std::make_shared<Paper::Segment>(lastLocation._point + lastLocation._tangent*length));
+	return newPath;
+}
+
 void Utils::ofSyncCameraToViewport(ofCamera & camera) {
 	// set ortho params
 	camera.enableOrtho();
@@ -29,12 +38,12 @@ void Utils::ofSyncCameraToViewport(ofCamera & camera) {
 
 void Utils::ofDraw(Paper::Segment segment) {
 	ofSetColor(ofColor::grey);
-	ofDrawCircle(segment._point, 10);
-	ofDrawCircle(segment._point + segment._handleIn, 5);
-	ofDrawCircle(segment._point + segment._handleOut, 5);
+	ofDrawCircle(segment.point(), 10);
+	ofDrawCircle(segment.point() + segment.handleIn(), 5);
+	ofDrawCircle(segment.point() + segment.handleOut(), 5);
 	ofSetColor(ofColor(128, 128, 128, 128));
-	ofDrawLine(segment._point, segment._point + segment._handleIn);
-	ofDrawLine(segment._point, segment._point + segment._handleOut);
+	ofDrawLine(segment.point(), segment.point() + segment.handleIn());
+	ofDrawLine(segment.point(), segment.point() + segment.handleOut());
 }
 
 void Utils::ofDraw(Paper::Curve curve) {
@@ -63,9 +72,9 @@ void Utils::ofDraw(Paper::Path path, bool verbose) {
 
 	if (verbose) {
 		for (auto segment : path.getSegments()) {
-			ofDrawCircle(segment->_point, 2.0);
-			ofDrawLine(segment->_point, segment->_point + segment->_handleIn);
-			ofDrawLine(segment->_point, segment->_point + segment->_handleOut);
+			ofDrawCircle(segment->point(), 2.0);
+			ofDrawLine(segment->point(), segment->point() + segment->handleIn());
+			ofDrawLine(segment->point(), segment->point() + segment->handleOut());
 		}
 	}
 }

@@ -43,11 +43,11 @@ namespace Field {
 		return xy;
 	}
 
-	glm::vec2 pathToRect(Paper::Path const & path, glm::vec2 uv) {
+	glm::vec2 pathToRect(Paper::Path const & path, glm::vec2 uv, bool weighted=true) {
 		double distance = uv.x;
 		double t = uv.y;
 
-		Paper::CurveLocation loc = path.getLocationAtTime(t);
+		Paper::CurveLocation loc = weighted ? path.getLocationAtTime(t) : path.getLocationAt(t*path.calcLength());
 		glm::vec2 P = loc._point;
 		glm::vec2 normal = loc._normal;
 
@@ -57,33 +57,32 @@ namespace Field {
 
 	glm::vec2 rectToCurve(Paper::Curve const & curve, glm::vec2 xy) {
 		double t = curve.getNearestTime(xy);
-		auto Q = curve.getPointAtTime(t);
-		double distance = glm::distance(xy, Q);
 
 		glm::vec2 P = curve.getPointAtTime(t);
 		glm::vec2 normal = curve.getNormalAtTime(t);
+		double distance = glm::distance(xy, P);
 
 		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
 		glm::vec2 uv(dot > 0 ? distance : -distance, t);
 		return uv;
 	}
 
-	glm::vec2 rectToPath(Paper::Path const & path, glm::vec2 xy) {
+	glm::vec2 rectToPath(Paper::Path const & path, glm::vec2 xy, bool weighted=true) {
 		double t = path.getNearestTime(xy);
-		auto Q = path.getPointAtTime(t);
-		double distance = glm::distance(xy, Q);
+		auto loc = weighted ? path.getLocationAtTime(t) : path.getLocationAt(t * path.calcLength());
+		glm::vec2 P = loc._point;
+		glm::vec2 normal = loc._normal;
 
-		glm::vec2 P = path.getPointAtTime(t);
-		glm::vec2 normal = path.getNormalAtTime(t);
+		double distance = glm::distance(xy, P);
 
 		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
 		glm::vec2 uv(dot > 0 ? distance : -distance, t);
 		return uv;
 	}
 
-	glm::vec2 pathToPath(Paper::Path const & source, Paper::Path const & target, glm::vec2 P0) {
-		glm::vec2 uv = Field::rectToPath(source, P0);
-		glm::vec2 P1 = Field::pathToRect(target, uv);
+	glm::vec2 pathToPath(Paper::Path const & source, Paper::Path const & target, glm::vec2 P0, bool weighted=true) {
+		glm::vec2 uv = Field::rectToPath(source, P0, weighted);
+		glm::vec2 P1 = Field::pathToRect(target, uv, weighted);
 		return P1;
 	}
 }
@@ -144,15 +143,6 @@ namespace Animation {
 		key.time(j.at(0).get<double>());
 		key.value(j.at(1).get<double>());
 	}
-}
-
-Paper::Path extend(Paper::Path path, double length) {
-	Paper::Path newPath{ path };
-	auto firstLocation = newPath.getLocationAtTime(0);
-	auto lastLocation = newPath.getLocationAtTime(1.0);
-	newPath.insert(0, std::make_shared<Paper::Segment>(firstLocation._point - firstLocation._tangent*length));
-	newPath.add(      std::make_shared<Paper::Segment>(lastLocation._point + lastLocation._tangent*length));
-	return newPath;
 }
 
 void fill(ofTexture * texture, std::function<glm::vec4(int x, int y)> f) {

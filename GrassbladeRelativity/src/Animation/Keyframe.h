@@ -37,23 +37,19 @@ namespace Animation {
 
 		double outTangent() const;
 
-		Keyframe * next() const;
-
-		Keyframe * prev() const;
-
-		TangentType inType() {
+		TangentType inType() const {
 			return mInType;
 		}
 
-		void inType(TangentType val) {
+		void inType(TangentType val){
 			mInType = val;
 		}
 
-		TangentType outType() {
+		TangentType outType() const {
 			return mOutType;
 		}
 
-		void outType(TangentType val) {
+		void outType(TangentType val){
 			mOutType = val;
 		}
 
@@ -64,8 +60,8 @@ namespace Animation {
 		TangentType mOutType{ Spline };
 		double mInTangent{0};
 		double mOutTangent{0};
-		friend class AnimationCurve;
-		AnimationCurve * curve;
-		size_t idx;
+
+		AnimationCurve * curve{ nullptr };
+		size_t idx{ 0 };
 	};
 }

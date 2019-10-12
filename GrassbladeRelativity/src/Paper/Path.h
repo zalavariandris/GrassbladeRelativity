@@ -6,40 +6,28 @@
 
 #include <vector>
 #include <memory> // enable shared from this
-
+#include <iostream>
 namespace Paper {
 	class Path : public std::enable_shared_from_this<Path>
 	{
-
-		
-		bool _closed;
+		bool _closed{ false };
 		int _version;
 
 		// caching
 		mutable bool CurvesNeedsUpdate{ true };
-		mutable bool LengthNeedsUpdate{ true };
+		
 		mutable double _length;
 
 		mutable std::vector<std::shared_ptr<Curve>> _curves;
 		std::vector<std::shared_ptr<Segment>> _segments;
 	public:
+		mutable bool LengthNeedsUpdate{ true };
 
 
 		//constructor
 		Path();
 		Path(std::vector<std::shared_ptr<Segment>> segments);
-
-		Path& operator =(Path other) {
-			_segments = std::vector<std::shared_ptr<Segment>>();
-			for (auto segment : other.getSegments()) {
-				add({ std::make_shared<Paper::Segment>(
-					segment->_point,
-					segment->_handleIn,
-					segment->_handleIn)
-					});
-			}
-			return *this;
-		}
+		Path(const Path & other);
 
 		// accessors
 		int countCurves() const;
@@ -58,6 +46,7 @@ namespace Paper {
 
 		double Path::getNearestTime(glm::vec2 point) const;
 
+		double calcLength() const;
 		double getLength() const;
 
 		std::shared_ptr<Curve> getFirstCurve() const;

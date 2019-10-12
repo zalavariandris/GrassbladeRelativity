@@ -23,6 +23,7 @@
 #include <opencv2/opencv.hpp>
 
 #include <map>
+#include "../utilities.h"
 
 cv::Mat renderSingle(
 	int frame, int w, int h,
@@ -34,7 +35,7 @@ cv::Mat renderSingle(
 	resize(reader->getMatAtFrame(frame), videoMat, cv::Size(w, h));
 
 	// animate source path
-	sourcePath.getSegments()[0]->_point = glm::vec2({ Ax.getValueAtFrame(frame), Ay.getValueAtFrame(frame) });
+	sourcePath.getSegments()[0]->point( glm::vec2({ Ax.getValueAtFrame(frame), Ay.getValueAtFrame(frame) }) );
 
 	// extend paths
 	auto extendedSourcePath = extend(sourcePath, 950);
@@ -52,7 +53,7 @@ cv::Mat renderSingle(
 				*progress = (double)y / videoMat.rows;
 			}
 			glm::vec2 P = Rect::map(glm::vec2(x, y), matRect, camRect);
-			glm::vec2 pos = Field::pathToPath(extendedSourcePath, extendedTargetPath, P);
+			glm::vec2 pos = Field::pathToPath(extendedSourcePath, extendedTargetPath, P, false);
 			pos = Rect::map(pos, camRect, matRect);
 			map_x.at<float>(y, x) = pos.x;
 			map_y.at<float>(y, x) = pos.y;
@@ -120,10 +121,10 @@ void Grassblade::save() {
 	j["deformFactor"] = deformFactor;
 	j["extensionLength"] = extensionLength;
 	j["animation"]["Ax"]["keys"] = Ax.keys();
-	j["sourcePath"]["segment1"]["point"]["x"] = sourcePath.getSegments()[1]->_point.x;
-	j["sourcePath"]["segment1"]["point"]["y"] = sourcePath.getSegments()[1]->_point.y;
-	j["sourcePath"]["segment1"]["handleIn"]["x"] = sourcePath.getSegments()[1]->_handleIn.x;
-	j["sourcePath"]["segment1"]["handleIn"]["y"] = sourcePath.getSegments()[1]->_handleIn.y;
+	j["sourcePath"]["segment1"]["point"]["x"] = sourcePath.getSegments()[1]->point().x;
+	j["sourcePath"]["segment1"]["point"]["y"] = sourcePath.getSegments()[1]->point().y;
+	j["sourcePath"]["segment1"]["handleIn"]["x"] = sourcePath.getSegments()[1]->handleIn().x;
+	j["sourcePath"]["segment1"]["handleIn"]["y"] = sourcePath.getSegments()[1]->handleIn().y;
 
 	std::ofstream o(filepath);
 	o << std::setw(2) << j.dump() << std::endl;
@@ -151,10 +152,10 @@ void Grassblade::open() {
 
 	double p1x = j["sourcePath"]["segment1"]["point"]["x"];
 	double p1y = j["sourcePath"]["segment1"]["point"]["y"];
-	sourcePath.getSegments()[1]->_point = glm::vec2(p1x, p1y);
+	sourcePath.getSegments()[1]->point(glm::vec2(p1x, p1y));
 	double h1x = j["sourcePath"]["segment1"]["handleIn"]["x"];
 	double h1y = j["sourcePath"]["segment1"]["handleIn"]["y"];
-	sourcePath.getSegments()[1]->_handleIn = glm::vec2(h1x, h1y);
+	sourcePath.getSegments()[1]->handleIn(glm::vec2(h1x, h1y));
 }
 
 void Grassblade::importKeysFromAE() {
@@ -168,7 +169,7 @@ void Grassblade::importKeysFromAE() {
 }
 
 void Grassblade::importKeysFromMaya() {
-	std::string filename{ "C:/Users/andris/Desktop/grassrelativityfootage/anim_6923_v04.anim" };
+	std::string filename{ "C:/Users/andris/Desktop/SelfRelativity/Production/anim_6923_v05.anim" };
 	std::vector<Animation::AnimationCurve> curves = Animation::Translators::MayaAnim::import(filename);
 
 	cout << curves.size() << " anim curves imported from: " << filename << endl;
@@ -179,6 +180,7 @@ void Grassblade::importKeysFromMaya() {
 	for (auto & key : curves[1].keys()) {
 		key.value(key.value() * -100);
 	}
+
 	Ax = curves[0];
 	Ay = curves[1];
 }
@@ -188,7 +190,7 @@ void Grassblade::onGui() {
 	ImGui::Begin("Viewer");
 	Im2D::BeginViewer("viewport");
 
-	glm::vec2 P1 = sourcePath.getSegments()[0]->_point;
+	glm::vec2 P1 = sourcePath.getSegments()[0]->point();
 	if (Im2D::DragPoint("P1", &P1)) {
 		// animate
 		if (autokey) {
@@ -197,12 +199,17 @@ void Grassblade::onGui() {
 		}
 	}
 
-	glm::vec2 h2 = sourcePath.getSegments()[1]->_point+sourcePath.getSegments()[1]->_handleIn;
+	glm::vec2 h2 = sourcePath.getSegments()[1]->point()+sourcePath.getSegments()[1]->handleIn();
 	if (Im2D::DragPoint("h2", &h2)) {
-		sourcePath.getSegments()[1]->_handleIn = h2 - sourcePath.getSegments()[1]->_point;
+		sourcePath.getSegments()[1]->handleIn() = h2 - sourcePath.getSegments()[1]->point();
 	}
 
-	Im2D::DragPoint("p2", &sourcePath.getSegments()[1]->_point);
+	glm::vec2 p2 = sourcePath.getSegments()[1]->point();
+	if (Im2D::DragPoint("p2", &p2)) {
+		sourcePath.getSegments()[1]->point(p2);
+	}
+
+
 
 	Im2D::EndViewer();
 	ImGui::End();
@@ -222,7 +229,7 @@ void Grassblade::onGui() {
 	}
 
 	if (ImGui::Button("copy from source")) {
-		targetPath = sourcePath;
+		targetPath = Paper::Path(sourcePath);
 	}
 
 	if (ImGui::CollapsingHeader("read movie", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -282,11 +289,6 @@ void Grassblade::tick() {
 	/* -----------------------------------
 	   TIME
 	   -----------------------------------*/
-	if (play)
-		F++;
-	if (play && F > endTime)
-		F = startTime;
-
 	onGui();
 };
 
@@ -363,18 +365,22 @@ void Grassblade::ShowPreview() {
 	videoImage = reader.getImageAtFrame(F);
 
 	// animate source path
-	sourcePath.getSegments()[0]->_point = glm::vec2({ Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) });
+	sourcePath.getSegments()[0]->point( glm::vec2({ Ax.getValueAtFrame(F), Ay.getValueAtFrame(F) }) );
 
 	// extend paths
-	auto extendedSourcePath = extend(sourcePath, 950);
-	auto extendedTargetPath = extend(targetPath, 950);
+	static float extendMultiply{ 1.0 };
+	ImGui::Begin("Inspector");
+	ImGui::DragFloat("extend mult", &extendMultiply, 1.0, 0, 4);
+	ImGui::End();
+	auto extendedSourcePath = extend(sourcePath, sourcePath.getLength()*extendMultiply);
+	auto extendedTargetPath = extend(targetPath, targetPath.getLength()*extendMultiply);
 
 	// deform plate
 	if (deformFactor > 0) {
 		auto & mesh = plate.getMesh();
 		for (auto i = 0; i < mesh.getVertices().size(); i++) {
 			glm::vec2 P0 = plateMesh.getVertex(i);
-			auto P1 = Field::pathToPath(extendedSourcePath, extendedTargetPath, P0);
+			auto P1 = Field::pathToPath(extendedSourcePath, extendedTargetPath, P0, false);
 			if (!isnan(P1.x) && !isnan(P1.y)) {
 				mesh.setVertex(i, glm::vec3(lerp(P0, P1, deformFactor), 0));
 			}
@@ -394,11 +400,13 @@ void Grassblade::ShowPreview() {
 	// draw extended paths
 	ImGui::Begin("Viewer", &ViewerOpen, ImGuiWindowFlags_NoBackground);
 	Im2D::BeginViewer("viewport");
+
+	//display source path
 	for (auto const & curve : extendedSourcePath.getCurves()) {
-		auto A = curve->_segment1->_point;
-		auto B = A + curve->_segment1->_handleOut;
-		auto D = curve->_segment2->_point;
-		auto C = D + curve->_segment2->_handleIn;
+		auto A = curve->_segment1->point();
+		auto B = A + curve->_segment1->handleOut();
+		auto D = curve->_segment2->point();
+		auto C = D + curve->_segment2->handleIn();
 		addBezierCurve(A, B, C, D, ImColor(255,255,255), 1);
 
 		addPoint(A, ImColor(255,255,255), 4.0);
@@ -407,6 +415,21 @@ void Grassblade::ShowPreview() {
 		addPoint(D, ImColor(255, 255, 255), 4.0);
 		addLineSegment(A, B, ImColor(255, 255, 255), 1);
 		addLineSegment(C, D, ImColor(255, 255, 255), 1);
+	}
+
+	for (auto i = 0; i < 100; i++) {
+		double t = (double)i / 100;
+		double offset = t * extendedSourcePath.getLength();
+		addPoint(extendedSourcePath.getLocationAt(offset)._point, ImColor(255, 0, 0), 3);
+	}
+
+	//display target path
+	for (auto const & curve : extendedTargetPath.getCurves()) {
+		auto A = curve->_segment1->point();
+		auto B = A + curve->_segment1->handleOut();
+		auto D = curve->_segment2->point();
+		auto C = D + curve->_segment2->handleIn();
+		addBezierCurve(A, B, C, D, ImColor(0, 0, 255), 1);
 	}
 	Im2D::EndViewer();
 	ImGui::End();

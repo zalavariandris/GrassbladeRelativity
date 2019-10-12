@@ -4,6 +4,7 @@
 //#include "examples/im2d_demos.h"
 //#include "examples/json_example.h"
 #include "examples/animcurvedemo.h"
+#include "examples/pathdemo.h"
 void ofApp::setup() {
 	/* imgui */
 	ImGuiIO& io = ImGui::GetIO();
@@ -125,13 +126,12 @@ void ofApp::draw() {
 	
 	ShowDockSpace();
 
+	//static ThinGrass thingrass; thingrass.tick();
+	static AnimcurveDemo animcurvedemo; animcurvedemo.tick();
+	//static Grassblade grassbalde; grassbalde.tick();
+	//static Pathdemo pathdemo; pathdemo.tick();
 
-	//static ThinGrass thinGrass;
-	//thinGrass.tick();
-	//static AnimcurveDemo demo;
-	//demo.tick();
-	static Grassblade grassbalde;
-	grassbalde.tick();
+
 	//showGrassblade();
 	//showJsonExample();
 

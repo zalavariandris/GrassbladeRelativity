@@ -44,6 +44,7 @@
     <ClCompile Include="src\Animation\AnimationCurve.cpp" />
     <ClCompile Include="src\Widgets\Grapheditor.cpp" />
     <ClCompile Include="src\Widgets\Timeslider.cpp" />
+    <ClCompile Include="src\Paper\Segment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -124,6 +125,7 @@
     <ClInclude Include="src\Animation\AnimationCurve.h" />
     <ClInclude Include="src\Widgets\Timeslider.hpp" />
     <ClInclude Include="src\Widgets\Grapheditor.hpp" />
+    <ClInclude Include="src\examples\pathdemo.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

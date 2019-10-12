@@ -12,31 +12,34 @@ namespace Paper {
 	class CurveLocation;
 	class Curve : public std::enable_shared_from_this<Curve> {
 	private:
-		std::function<double(double)> getLengthIntegrand() const;
+		friend class Path;
 
-		// Amount of integral evaluations for the interval 0 <= a < b <= 1
-		int getIterations(double a, double b) const;
-
+		const Path * path{ nullptr };
 		bool LengthNeedsUpdate{ true };
 		bool BoundsNeedsUpdate{ true };
 	public:
+		std::shared_ptr<Segment> _segment1;
+		std::shared_ptr<Segment> _segment2;
 		/*
 		 *static functions
 		 */
-		static glm::vec2 evaluate(std::array<double, 8> const & v, double t, int type, bool normalized);
+		/////
+		//static glm::vec2 evaluate(std::array<double, 8> const & v, double t, int type, bool normalized);
+		///
 		static bool evaluate2(std::array<double, 8> const & v, double t, glm::vec2 * point = nullptr, bool normalized = true, glm::vec2 * tangent = nullptr, glm::vec2 * normal = nullptr, double * curvature = nullptr);
-		static int solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV);
+		
+		///
 		static bool isStraight(glm::vec2 const & p1, glm::vec2 const & h1, glm::vec2 const & h2, glm::vec2 const & p2);
 
-		/*
-		 * private memnbers
-		 */
-		std::shared_ptr<Segment> _segment1;
-		std::shared_ptr<Segment> _segment2;
+		std::function<double(double)> getLengthIntegrand() const;
+		/// Amount of integral evaluations for the interval 0 <= a < b <= 1
+		int getIterations(double a, double b) const;
+
 
 		// class constructors
-		Curve() :_segment1(std::make_shared<Segment>()), _segment2(std::make_shared<Segment>()) {};
-		Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2) : _segment1(segment1), _segment2(segment2) {};
+		Curve();
+		Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2);
+		Curve(Path * path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2);
 
 		 /*
 		  * member functions

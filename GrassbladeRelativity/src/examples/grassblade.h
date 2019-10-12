@@ -49,5 +49,7 @@ private:
 	bool autokey{ false };
 	void ShowRender();
 	void ShowPreview();
+
+	bool weighted{ false };
 };
 

@@ -8,6 +8,11 @@
 /* Widgets */
 #include <glm/glm.hpp>
 void Widgets::Timeslider(const char * label_id, int * frame, bool * play, int * begin, int * end) {
+	if (*play)
+		(*frame)++;
+	if (*play && *frame > *end)
+		*frame = *begin;
+
 	// time slider
 	ImGui::BeginGroup();
 

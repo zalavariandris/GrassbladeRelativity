@@ -16,6 +16,18 @@ namespace Paper {
 
 		CurveLocation(Curve curve, double time);
 
+		glm::vec2 point() {
+			return _point;
+		}
+
+		glm::vec2 tangent() {
+			return _tangent;
+		}
+
+		glm::vec2 normal() {
+			return _normal;
+		}
+
 		bool isValid() const {
 			return !isnan(_time);
 		}

@@ -8,22 +8,18 @@ namespace Animation {
 	class AnimationCurve {
 	public:
 		AnimationCurve::AnimationCurve() {};
-		AnimationCurve(std::vector<Keyframe> _keys) :mKeys(_keys) {
-			sortKeys();
-		};
+		AnimationCurve(std::vector<Keyframe> _keys) :mKeys(_keys) {};
 
-		void sortKeys();
-
-		std::string label;
+		std::string label{"-curve-"};
 
 		std::vector<Keyframe> & keys();
-
-		double evaluate(double t, Keyframe keyframe0, Keyframe keyframe1) const;
 
 		void setKeys(std::vector<Keyframe> val);
 
 		void setValueAtFrame(double value, int frame);
-		double getValueAtFrame(int time) const;
+
+		double getValueAtFrame(double time) const;
+
 	private:
 		std::vector<Keyframe> mKeys;
 	};

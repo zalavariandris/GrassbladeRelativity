@@ -5,27 +5,8 @@
 #include <algorithm> //sort
 
 namespace Animation {
-	double AnimationCurve::evaluate(double t, Keyframe keyframe0, Keyframe keyframe1) const
-	{
-		float dt = keyframe1.time() - keyframe0.time();
-
-		float m0 = keyframe0.outTangent() * dt;
-		float m1 = keyframe1.inTangent() * dt;
-
-		float t2 = t * t;
-		float t3 = t2 * t;
-
-		float a = 2 * t3 - 3 * t2 + 1;
-		float b = t3 - 2 * t2 + t;
-		float c = t3 - t2;
-		float d = -2 * t3 + 3 * t2;
-
-		return a * keyframe0.value() + b * m0 + c * m1 + d * keyframe1.value();
-	}
-
 	void AnimationCurve::setKeys(std::vector<Keyframe> val) {
 		mKeys = val;
-		sortKeys();
 	}
 
 
@@ -34,14 +15,20 @@ namespace Animation {
 	}
 
 	void AnimationCurve::setValueAtFrame(double value, int frame) {
-		if (mKeys.empty())
+		if (mKeys.empty()) {
 			mKeys.push_back(Keyframe(frame, value));
-
-		if (frame < mKeys[0].time())
+			return;
+		}
+		
+		if (frame < mKeys[0].time()) {
 			mKeys.insert(mKeys.begin(), 1, Keyframe(frame, value));
+			return;
+		}
 
-		if (frame > mKeys[mKeys.size() - 1].time())
+		if (frame > mKeys[mKeys.size() - 1].time()) {
 			mKeys.push_back(Keyframe(frame, value));
+			return;
+		}
 
 		// find key at frame
 		auto i = -1;
@@ -53,25 +40,14 @@ namespace Animation {
 
 		// find embace keys
 		int i1 = 0;
-		while (mKeys[i1].time() <= frame)
+		while (i1 < mKeys.size() && mKeys[i1].time() <= frame)
 			i1++;
 		int i0 = i1 - 1;
 
 		mKeys.insert(mKeys.begin() + i1, 1, Keyframe(frame, value));
-		sortKeys();
 	}
 
-	void AnimationCurve::sortKeys() {
-		std::sort(mKeys.begin(), mKeys.end(), [](auto A, auto B) {
-			return A.time() < B.time();
-		});
-		for (auto i = 0; i < mKeys.size(); i++) {
-			mKeys[i].idx = i;
-			mKeys[i].curve = this;
-		}
-	}
-
-	double AnimationCurve::getValueAtFrame(int time) const{
+	double AnimationCurve::getValueAtFrame(double time) const{
 
 		// find the keys
 		if (mKeys.empty()) {
@@ -94,15 +70,81 @@ namespace Animation {
 
 		// find embace keys
 		int i1 = 0;
-		while (mKeys[i1].time() < time) {
+		while (mKeys[i1].time() <= time) {
 			i1++;
 		}
 		int i0 = i1 - 1;
 
-		// normalize t
-		double t = (double)(time - mKeys[i0].time()) / (mKeys[i1].time() - mKeys[i0].time());
-		double value = evaluate(t, mKeys[i0], mKeys[i1]);
 
-		return value;
+		// calculate tangent based on key type
+		auto evalLinearOutTangentAtIndex = [this](int idx)->double {
+			bool isLast = idx == mKeys.size() - 1;
+			if (isLast) {
+				return 0;
+			}
+
+			double x = mKeys[idx + 1].time() - mKeys[idx].time();
+			double y = mKeys[idx + 1].value() - mKeys[idx].value();
+			return y / x;
+		};
+
+		auto evalLinearInTangentAtIndex = [this](int idx)->double {
+			bool isFirst = idx == 0;
+			if (isFirst) {
+				return 0;
+			}
+
+			double x = mKeys[idx].time() - mKeys[idx-1].time();
+			double y = mKeys[idx].value() - mKeys[idx-1].value();
+			return y / x;
+		};
+
+		auto evalSplineOutTangentAtIndex = [this](int idx)->double {
+			bool isFirst = idx == 0;
+			bool isLast = idx == mKeys.size() - 1;
+			if (isLast) {
+				return 0;
+			}
+			if(isFirst) {
+				double x = mKeys[idx+1].time() - mKeys[idx].time();
+				double y = mKeys[idx+1].value() - mKeys[idx].value();
+				return y / x;
+			}
+			double x = mKeys[idx + 1].time() - mKeys[idx - 1].time();
+			double y = mKeys[idx + 1].value() - mKeys[idx - 1].value();
+			return y / x;
+		};
+
+		auto evalSplineInTangentAtIndex = [this](int idx)->double {
+			bool isFirst = idx == 0;
+			bool isLast = idx == mKeys.size() - 1;
+			if (isFirst) {
+				return 0;
+			}
+			if(isLast) {
+				double x = mKeys[idx].time() - mKeys[idx-1].time();
+				double y = mKeys[idx].value() - mKeys[idx-1].value();
+				return y / x;
+			}
+			double x = mKeys[idx + 1].time() - mKeys[idx - 1].time();
+			double y = mKeys[idx + 1].value() - mKeys[idx - 1].value();
+			return y / x;
+		};
+
+		// EVALUATE
+		double dt = mKeys[i1].time() - mKeys[i0].time();
+		double t = (double)(time - mKeys[i0].time()) / dt; // [0,1]
+
+		double m0 = evalSplineOutTangentAtIndex(i0) * dt;
+		double m1 = evalSplineInTangentAtIndex(i1) * dt;
+
+		double t2 = t * t;
+		double t3 = t2 * t;
+		double a = 2 * t3 - 3 * t2 + 1;
+		double b = t3 - 2 * t2 + t;
+		double c = t3 - t2;
+		double d = -2 * t3 + 3 * t2;
+
+		return a * mKeys[i0].value() + b * m0 + c * m1 + d * mKeys[i1].value();
 	}
 }

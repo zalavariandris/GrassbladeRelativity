@@ -7,11 +7,29 @@
 namespace Paper {
 	Path::Path() {
 		_closed = false;
+		LengthNeedsUpdate = true;
 	}
 
 	Path::Path(std::vector<std::shared_ptr<Segment>> segments) {
 		_add(segments);
 		_closed = false;
+		LengthNeedsUpdate = true;
+	}
+
+	Path::Path(const Path & other) {
+		// Deep copy
+		CurvesNeedsUpdate = true;
+		_segments = std::vector<std::shared_ptr<Segment>>();
+		for (auto const & segment : other.getSegments()) {
+			add({
+				std::make_shared<Paper::Segment>(
+					segment->point(),
+					segment->handleIn(),
+					segment->handleOut()
+				)
+			});
+		}
+		LengthNeedsUpdate = true;
 	}
 
 	void Path::draw() const {
@@ -155,7 +173,9 @@ namespace Paper {
 			auto length = countCurves();
 			_curves = std::vector<std::shared_ptr<Curve>>(length);
 			for (auto i = 0; i < length; i++) {
-				_curves[i] = std::make_shared<Curve>(/* TODO weak reference to path weak_from_this(),*/ _segments[i], _segments[i + 1]);
+				_curves[i] = std::make_shared<Curve>(_segments[i], _segments[i + 1]);
+				_curves[i]->path = this;
+				
 				//TODO:: closed path
 				// Use first segment for segment2 of closing curve
 				//i + 1 < _segments.size() ? _segments[i+1] : _segments[0]);
@@ -165,14 +185,18 @@ namespace Paper {
 		return _curves;
 	}
 
+	double Path::calcLength() const{
+		auto curves = getCurves();
+		double length = 0;
+		for (auto i = 0; i < curves.size(); i++) {
+			length += curves[i]->getLength();
+		}
+		return length;
+	}
+
 	double Path::getLength() const {
 		if (LengthNeedsUpdate) {
-			auto curves = getCurves();
-			double length = 0;
-			for (auto i = 0; i < curves.size(); i++) {
-				length += curves[i]->getLength();
-			}
-			_length = length;
+			_length = calcLength();
 			LengthNeedsUpdate = false;
 		}
 		return _length;
@@ -209,13 +233,13 @@ namespace Paper {
 			auto segment = segs[i];
 			// If the segments belong to another path already, clone them before
 			// adding:
-			// TODO: weak reference to path
-			//if (segment->_path.lock())
-			//	segment = segs[i] = std::make_shared<Segment>(*segment);// segment.clone();
-			//segment->_path = weak_from_this();
-			segment->_index = index + i;
+			if (segment->_path != nullptr)
+				segment = segs[i] = std::make_shared<Segment>(*segment);// segment.clone();
+			segment->_path = this;
 
+			segment->_index = index + i;
 		}
+
 		if (append) {
 			_segments.reserve(_segments.size() + segs.size());
 			_segments.insert(_segments.end(), segs.begin(), segs.end());
@@ -224,6 +248,7 @@ namespace Paper {
 			_segments.reserve(_segments.size() + segs.size());
 			_segments.insert(_segments.begin() + index, segs.begin(), segs.end());
 		}
+
 		// Keep the curves list in sync all the time in case it was requested
 		// already.
 		if (!CurvesNeedsUpdate) {
@@ -238,7 +263,7 @@ namespace Paper {
 			// since #_adjustCurves() handles all that for us
 			for (auto i = insert; i < end; i++) {
 				_curves.insert(_curves.begin() + i, std::make_shared<Curve>(
-					//weak_from_this(), 
+					this, 
 					std::make_shared<Segment>(),
 					std::make_shared<Segment>()
 					)
@@ -247,6 +272,8 @@ namespace Paper {
 			// Adjust segments for the curves before and after the removed ones
 			_adjustCurves(start, end);
 		}
+
+		LengthNeedsUpdate = true;
 	}
 
 	/**
