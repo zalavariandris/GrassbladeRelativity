@@ -45,7 +45,7 @@ public:
 };
 
 void exampleUsage() {
-	Node sourcePath("sourcePath");
-	Node targetPath("targetPath");
-	ExtendPath("extendedPath", {"path", &sourcePath});
+	//Node sourcePath("sourcePath");
+	//Node targetPath("targetPath");
+	//ExtendPath("extendedPath", {"path", &sourcePath});
 }

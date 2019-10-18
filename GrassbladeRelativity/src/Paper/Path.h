@@ -8,68 +8,73 @@
 #include <memory> // enable shared from this
 #include <iostream>
 namespace Paper {
-	class Path : public std::enable_shared_from_this<Path>
+	class Path
 	{
-		bool _closed{ false };
-		int _version;
-
+		friend class Segment;
+		
 		// caching
 		mutable bool CurvesNeedsUpdate{ true };
-		
-		mutable double _length;
-
-		mutable std::vector<std::shared_ptr<Curve>> _curves;
-		std::vector<std::shared_ptr<Segment>> _segments;
-	public:
 		mutable bool LengthNeedsUpdate{ true };
+		mutable double mLength;
 
+		// attributes
+		bool mClosed{ false };
 
-		//constructor
+		// segments and curves
+		mutable std::vector<Curve> mCurves;
+		mutable std::vector<Segment> mSegments;
+
+		// helper methods
+		int countCurves() const;
+		void _add(std::vector<Segment> segs, int index = -1);
+		//Adjusts segments of curves before and after inserted / removed segments.
+		void _adjustCurves(int start, int end);
+
+	public:
+		//constructors
 		Path();
-		Path(std::vector<std::shared_ptr<Segment>> segments);
+		Path(std::vector<Segment> segments);
 		Path(const Path & other);
+		Path& operator = (const Path &other);
 
 		// accessors
-		int countCurves() const;
-		std::vector<std::shared_ptr<Curve>> getCurves() const;
+		std::vector<Curve> & getCurves();
+		Curve & getFirstCurve();
+		Curve & getLastCurve();
+		const std::vector<Curve> & getCurves() const;
+		const Curve & getFirstCurve() const;
+		const Curve & getLastCurve() const;
 
-		//
-		CurveLocation getLocationAt(double offset) const;
-		glm::vec2 getPointAt(double offset) const;
-		glm::vec2 getTangentAt(double offset) const;
-		glm::vec2 getNormalAt(double offset) const;
+		std::vector<Segment> & getSegments();
+		Segment & getFirstSegment();
+		Segment & getLastSegment();
+		const std::vector<Segment> & getSegments() const;
+		const Segment & getFirstSegment() const;
+		const Segment & getLastSegment() const;
 
+		double getLength() const;
+		bool closed() const;
+		void closed(bool val);
+
+		// get curve location
 		CurveLocation getLocationAtTime(double t) const;
 		glm::vec2 getPointAtTime(double t) const;
 		glm::vec2 getTangentAtTime(double t) const;
 		glm::vec2 getNormalAtTime(double t)const;
 
-		double Path::getNearestTime(glm::vec2 point) const;
+		CurveLocation getLocationAt(double offset) const;
+		glm::vec2 getPointAt(double offset) const;
+		glm::vec2 getTangentAt(double offset) const;
+		glm::vec2 getNormalAt(double offset) const;
 
-		double calcLength() const;
-		double getLength() const;
+		double getNearestTime(glm::vec2 point) const;
 
-		std::shared_ptr<Curve> getFirstCurve() const;
-		std::shared_ptr<Curve> getLastCurve() const;
-
-		std::vector<std::shared_ptr<Segment>> getSegments() const;
-		std::shared_ptr<Segment> getFirstSegment() const;
-		std::shared_ptr<Segment> getLastSegment() const;
-
-		void draw() const;
-
-		// mutte Path
+		// mutate Path
 		void add(Segment segment);
-		void add(std::shared_ptr<Segment> segment);
-		void add(std::vector<std::shared_ptr<Segment>> segments);
+		void add(std::vector<Segment> segments);
 
-		void insert(int index, std::shared_ptr<Segment> segment);
-		void insert(int index, std::vector<std::shared_ptr<Segment>> segments);
-
-		void _add(std::vector<std::shared_ptr<Segment>> segs, int index = -1);
-		void _adjustCurves(int start, int end);
-
-
+		void insert(int index, Segment segment);
+		void insert(int index, std::vector<Segment> segments);
 	};
 }
 

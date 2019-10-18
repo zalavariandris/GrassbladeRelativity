@@ -4,6 +4,8 @@
 #include <chrono> //sleep
 #include <thread> //sleep
 #include <functional>
+#include "../Geo/Polygon.h"
+
 using json = nlohmann::json;
 
 struct Rect {
@@ -30,63 +32,6 @@ double random() {
 	static auto dice = std::bind(distribution, generator);
 	return dice();
 }
-
-namespace Field {
-	glm::vec2 curveToRect(Paper::Curve const & curve, glm::vec2 uv) {
-		double distance = uv.x;
-		double t = uv.y;
-
-		glm::vec2 P = curve.getPointAtTime(t);
-		glm::vec2 normal = curve.getNormalAtTime(t);
-
-		glm::vec2 xy = P + normal * distance;
-		return xy;
-	}
-
-	glm::vec2 pathToRect(Paper::Path const & path, glm::vec2 uv, bool weighted=true) {
-		double distance = uv.x;
-		double t = uv.y;
-
-		Paper::CurveLocation loc = weighted ? path.getLocationAtTime(t) : path.getLocationAt(t*path.calcLength());
-		glm::vec2 P = loc._point;
-		glm::vec2 normal = loc._normal;
-
-		glm::vec2 xy = P + normal * distance;
-		return xy;
-	}
-
-	glm::vec2 rectToCurve(Paper::Curve const & curve, glm::vec2 xy) {
-		double t = curve.getNearestTime(xy);
-
-		glm::vec2 P = curve.getPointAtTime(t);
-		glm::vec2 normal = curve.getNormalAtTime(t);
-		double distance = glm::distance(xy, P);
-
-		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
-		glm::vec2 uv(dot > 0 ? distance : -distance, t);
-		return uv;
-	}
-
-	glm::vec2 rectToPath(Paper::Path const & path, glm::vec2 xy, bool weighted=true) {
-		double t = path.getNearestTime(xy);
-		auto loc = weighted ? path.getLocationAtTime(t) : path.getLocationAt(t * path.calcLength());
-		glm::vec2 P = loc._point;
-		glm::vec2 normal = loc._normal;
-
-		double distance = glm::distance(xy, P);
-
-		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
-		glm::vec2 uv(dot > 0 ? distance : -distance, t);
-		return uv;
-	}
-
-	glm::vec2 pathToPath(Paper::Path const & source, Paper::Path const & target, glm::vec2 P0, bool weighted=true) {
-		glm::vec2 uv = Field::rectToPath(source, P0, weighted);
-		glm::vec2 P1 = Field::pathToRect(target, uv, weighted);
-		return P1;
-	}
-}
-
 
 bool DragVec2(const char * label, glm::vec2 * P) {
 	float v[2]{ P->x, P->y };

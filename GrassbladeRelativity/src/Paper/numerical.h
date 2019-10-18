@@ -75,13 +75,9 @@ namespace Numerical {
 	*/
 	extern double KAPPA;
 
-	double clamp(double value, double min, double max);
+	
 
 	double getDiscriminant(double a, double b, double c);
-
-	double getMax(std::vector<double> values);
-
-	double getMin(std::vector<double> values);
 
 	double getNormalizationFactor(std::vector<double> values);
 
@@ -102,6 +98,7 @@ namespace Numerical {
 	* @return {Number} a number in the range of [min, max]
 	*/
 	
+	double clamp(double value, double min, double max);
 
 	/**
 	* Gauss-Legendre Numerical Integration.

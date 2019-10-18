@@ -21,7 +21,6 @@ public:
 	void importKeysFromMaya();
 	void open();
 	void save();
-	void onGui();
 private:
 
 	std::string filepath{ ofToDataPath("projects/grassblade.json") };

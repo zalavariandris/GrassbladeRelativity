@@ -5,35 +5,36 @@
 #include "Curve.h"
 namespace Paper {
 	class CurveLocation {
+	private:
+		bool mValid{ false };
+		glm::vec2 mPoint;
+		glm::vec2 mTangent;
+		glm::vec2 mNormal;
+		double mTime;
 	public:
-		double _time;
-		Curve _curve;
-		glm::vec2 _point;
-		glm::vec2 _tangent;
-		glm::vec2 _normal;
 
 		CurveLocation();
 
-		CurveLocation(Curve curve, double time);
+		CurveLocation::CurveLocation(Curve const & curve, double time);
 
 		glm::vec2 point() {
-			return _point;
+			return mPoint;
 		}
 
 		glm::vec2 tangent() {
-			return _tangent;
+			return mTangent;
 		}
 
 		glm::vec2 normal() {
-			return _normal;
+			return mNormal;
 		}
 
-		bool isValid() const {
-			return !isnan(_time);
+		double time() {
+			return mTime;
 		}
 
 		operator bool() const {
-			return isValid();
+			return mValid;
 		}
 	};
 }

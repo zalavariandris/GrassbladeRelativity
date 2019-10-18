@@ -23,7 +23,7 @@ void showViewerDemo() {
 	if (ImGui::Button("Reset"))
 		size[0] = size[1] = 0;
 
-	Im2D::ViewerBegin("viewer1", ImVec2(size[0],size[1]), flags);
+	Im2D::ViewerBegin("viewer1", ImVec2(size[0], size[1]), flags);
 	Im2D::ViewerEnd();
 	ImGui::End();
 

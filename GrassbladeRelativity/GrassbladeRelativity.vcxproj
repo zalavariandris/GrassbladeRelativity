@@ -55,7 +55,7 @@
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -66,7 +66,7 @@
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_core411.lib;opencv_imgproc411.lib;opencv_imgcodecs411.lib;opencv_videoio411.lib;opencv_shape411.lib;opencv_core411d.lib;opencv_imgproc411d.lib;opencv_imgcodecs411d.lib;opencv_videoio411d.lib;opencv_shape411d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core411d.lib;opencv_imgproc411d.lib;opencv_imgcodecs411d.lib;opencv_videoio411d.lib;opencv_shape411d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -110,8 +110,11 @@
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Gui.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\Helpers.cpp" />
     <ClCompile Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.cpp" />
+    <ClCompile Include="src\Im2D\mousetools\panandzoom.cpp" />
+    <ClCompile Include="src\Im2D\mousetools\selectandmove.cpp" />
     <ClCompile Include="src\Animation\AnimationCurve.cpp" />
     <ClCompile Include="src\Animation\Keyframe.cpp" />
+    <ClCompile Include="src\Im2DPaper\Im2DPaper.cpp" />
     <ClCompile Include="src\Paper\basic\Line.cpp" />
     <ClCompile Include="src\Animation\Translators\AEAnimationData.cpp" />
     <ClCompile Include="src\Animation\Translators\MayaAnim.cpp" />
@@ -149,11 +152,18 @@
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ofxImGuiLoggerChannel.h" />
     <ClInclude Include="C:\Users\andris\Documents\of_v0.10.0_vs2017_release\addons\ofxImGui\src\ThemeTest.h" />
     <ClInclude Include="json.hpp" />
+    <ClInclude Include="src\Im2D\mousetools\panandzoom.h" />
+    <ClInclude Include="src\Im2D\mousetools\selectandmove.h" />
     <ClInclude Include="src\Animation\AnimationCurve.h" />
     <ClInclude Include="src\Animation\Keyframe.h" />
     <ClInclude Include="src\examples\animcurvedemo.h" />
+    <ClInclude Include="src\examples\curvecoordsdemo.h" />
     <ClInclude Include="src\examples\grassblade_utilities.h" />
     <ClInclude Include="src\examples\pathdemo.h" />
+    <ClInclude Include="src\examples\polydemo.h" />
+    <ClInclude Include="src\examples\vieweritemsdemo.h" />
+    <ClInclude Include="src\Geo\Polygon.h" />
+    <ClInclude Include="src\Geo\Polygonh.h" />
     <ClInclude Include="src\Project.h" />
     <ClInclude Include="src\examples\ThinGrass.h" />
     <ClInclude Include="src\experimental\DAG.h" />

@@ -4,44 +4,53 @@
 #include <iostream>
 namespace Paper {
 	Segment::Segment() :
-		_point(glm::vec2(0)), _handleIn(glm::vec2(0)), _handleOut(glm::vec2(0)) {};
+		mPoint(glm::vec2(0)),
+		mHandleIn(glm::vec2(0)),
+		mHandleOut(glm::vec2(0)) {};
 
 	Segment::Segment(glm::vec2 point) :
-		_point(point), _handleIn(glm::vec2(0)), _handleOut(glm::vec2(0)) {};
+		mPoint(point), 
+		mHandleIn(glm::vec2(0)), 
+		mHandleOut(glm::vec2(0)) {};
+
+	Segment::Segment(glm::vec2 point, glm::vec2 handle) :
+		mPoint(point),
+		mHandleIn(-handle),
+		mHandleOut(handle) {};
 
 	Segment::Segment(glm::vec2 point, glm::vec2 handleIn, glm::vec2 handleOut) :
-		_point(point), _handleIn(handleIn), _handleOut(handleOut) {};
+		mPoint(point),
+		mHandleIn(handleIn),
+		mHandleOut(handleOut) {};
 
-	// shoud be private, but friends with curve and path
 	glm::vec2 Segment::point() const {
-		return _point;
+		return mPoint;
 	}
 
 	void Segment::point(glm::vec2 val) {
-		if (_path != nullptr) {
-			_path->LengthNeedsUpdate = true;
-		}
-		_point = val;
+		assert(mPath != nullptr); // segment must be element of a path
+		mPath->LengthNeedsUpdate = true;
+		mPoint = val;
 	}
 
 	glm::vec2 Segment::handleIn() const {
-		return _handleIn;
+		return mHandleIn;
 	}
+
 	void Segment::handleIn(glm::vec2 val) {
-		if (_path!=nullptr) {
-			_path->LengthNeedsUpdate = true;
-		}
-		_handleIn = val;
+		assert(mPath != nullptr); // segment must be element of a path
+		mPath->LengthNeedsUpdate = true;
+		mHandleIn = val;
 	}
 
 	glm::vec2 Segment::handleOut() const {
-		return _handleOut;
+		return mHandleOut;
 	}
+
 	void Segment::handleOut(glm::vec2 val) {
-		if (_path!=nullptr) {
-			_path->LengthNeedsUpdate = true;
-		}
-		_handleOut = val;
+		assert(mPath != nullptr); // segment must be element of a path
+		mPath->LengthNeedsUpdate = true;
+		mHandleOut = val;
 	}
 }
 

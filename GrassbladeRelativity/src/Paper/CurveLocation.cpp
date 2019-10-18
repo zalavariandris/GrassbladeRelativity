@@ -1,12 +1,11 @@
 #include "CurveLocation.h"
 #include <array>
 namespace Paper {
-	CurveLocation::CurveLocation() :
-		_curve(Curve()), _time(NAN) {};
+	CurveLocation::CurveLocation() {}
 
-	CurveLocation::CurveLocation(Curve curve, double time) :
-		_curve(curve), _time(time) {
-		_curve.evaluate2(curve.getValues(), _time, &_point, true, &_tangent, &_normal);
+	CurveLocation::CurveLocation(Curve const & curve, double time) {
+		mValid = curve.evaluate2(curve.getValues(), time, &mPoint, true, &mTangent, &mNormal);
+		mTime = time;
 	};
 }
 

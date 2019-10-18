@@ -5,6 +5,10 @@
 //#include "examples/json_example.h"
 #include "examples/animcurvedemo.h"
 #include "examples/pathdemo.h"
+#include "examples/polydemo.h"
+#include "examples/curvecoordsdemo.h"
+#include "examples/vieweritemsdemo.h"
+
 void ofApp::setup() {
 	/* imgui */
 	ImGuiIO& io = ImGui::GetIO();
@@ -15,10 +19,6 @@ void ofApp::setup() {
 	style.TabRounding = 0.0;
 	style.WindowMenuButtonPosition = ImGuiDir_Right;
 	gui.setup();
-
-
-
-
 	
 	io.FontGlobalScale = 1.0;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -127,11 +127,12 @@ void ofApp::draw() {
 	ShowDockSpace();
 
 	//static ThinGrass thingrass; thingrass.tick();
-	static AnimcurveDemo animcurvedemo; animcurvedemo.tick();
+	//static AnimcurveDemo animcurvedemo; animcurvedemo.tick();
 	//static Grassblade grassbalde; grassbalde.tick();
 	//static Pathdemo pathdemo; pathdemo.tick();
-
-
+	//static Polydemo polydemo; polydemo.tick();
+	//static Curvecoordsdemo curvecoordsdemo; curvecoordsdemo.tick();
+	static Vieweritemsdemo vieweritemsdemo; vieweritemsdemo.tick();
 	//showGrassblade();
 	//showJsonExample();
 

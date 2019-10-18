@@ -9,7 +9,8 @@
 #include <iostream>
 #include "imconfig.h"
 //#include "ofMain.h"
-
+#include "mousetools/panandzoom.h"
+#include "mousetools/selectandmove.h"
 Im2DContext * Im2D::GetCurrentContext() {
 	static Im2DContext * ctx = new Im2DContext();
 	return ctx;
@@ -30,6 +31,10 @@ glm::vec2 Im2D::GetMouseDelta() {
 		io.MouseDelta.x / scale.x,
 		io.MouseDelta.y / scale.y
 	);
+}
+
+glm::vec2 Im2D::GetMouseDragDelta() {
+	return glm::vec2(ImGui::GetMouseDragDelta()) / Im2D::getZoom();
 }
 
 bool Im2D::DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D) {
@@ -62,66 +67,6 @@ bool Im2D::DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, 
 }
 
 // Viewer
-bool ScreenControls(const char * str_id, const ImVec2 & size, glm::mat3 * viewMatrix, bool IndependentZoom=false) {
-	bool changed{ false };
-	// ImGui does not allow zero size Invisible Button.
-	if (size.x != 0.0f && size.y != 0.0f) {
-		ImGui::InvisibleButton(str_id, size);
-		ImGui::SetItemAllowOverlap();
-	}
-	auto io = ImGui::GetIO();
-
-	if (ImGui::IsItemHovered(ImGuiHoveredFlags_None) && ImGui::IsMouseDown(2)) {
-		ImGui::ActivateItem(ImGui::GetItemID());
-	}
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(2)) {
-		ImGui::ActivateItem(ImGui::GetItemID());
-	}
-
-	glm::vec2 zoom = glm::vec2( (*viewMatrix)[0][0], (*viewMatrix)[1][1] ); // get zoom
-	glm::vec2 pan((*viewMatrix)[2][0] / zoom.x, (*viewMatrix)[2][1] / zoom.y); //get pan
-
-	if (ImGui::IsItemActive() && (ImGui::IsMouseDragging(2) && !ImGui::GetIO().KeyAlt ||
-		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyCtrl))) {
-		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
-		float h = io.MouseDelta.x * 1 / scale.x; // horizontal
-		float v = io.MouseDelta.y * 1 / scale.y; // vertical
-
-		pan += glm::vec2(h, v);
-		changed = true;
-	}
-
-	// handle zoom with mouse wheel
-	if (io.MouseWheel != 0 && ImGui::IsItemHovered(ImGuiHoveredFlags_None)) {
-		zoom *= 1 + io.MouseWheel*0.1;
-		changed = true;
-	}
-
-	// handle zoom with MMB+alt
-	if (ImGui::IsItemActive() && // item is active
-		((ImGui::IsMouseDragging(2) && ImGui::GetIO().KeyAlt) || // MMB and ALT
-		(ImGui::IsMouseDragging(0) && ImGui::GetIO().KeyAlt && ImGui::GetIO().KeyCtrl))) //LMB + CTRL+ALT
-	{ 
-		glm::vec2 scale = glm::vec2((*viewMatrix)[0][0], (*viewMatrix)[1][1]);
-		float zoomSpeed = 0.01;
-		float horizontalZoomFactor = io.MouseDelta.x * 1 * zoomSpeed; // horizontal
-		float verticalZoomFactor = io.MouseDelta.y * -1 * zoomSpeed; // vertical
-		if (!IndependentZoom) {
-			horizontalZoomFactor = verticalZoomFactor = (horizontalZoomFactor + verticalZoomFactor) / 2;
-		}
-		zoom *= glm::vec2(1 + horizontalZoomFactor, 1 + verticalZoomFactor);
-		changed = true;
-	}
-
-	if (changed) {
-		*viewMatrix = glm::mat3({       zoom.x,          0, 0,
-						                   0,       zoom.y, 0,
-						          pan.x*zoom.x, pan.y*zoom.y, 1 });
-	}
-
-	return changed;
-}
-
 void Im2D::BeginViewer(const char* label_id, const ImVec2 & size, Im2DViewportFlags flags) {
 	assert(GetCurrentContext()->CurrentViewer == nullptr); /* missing end of the last viewer*/
 
@@ -133,7 +78,7 @@ void Im2D::BeginViewer(const char* label_id, const ImVec2 & size, Im2DViewportFl
 	//
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	ImGuiID id = window->GetID(label_id);
-	ImRect contentRect = window->ContentsRegionRect; // get the child window content rect in __screen space__
+	ImRect workRect = window->WorkRect;
 	ImDrawList * drawList = window->DrawList;
 
 	//ImGuiContext * g = ImGui::GetCurrentContext();
@@ -155,25 +100,23 @@ void Im2D::BeginViewer(const char* label_id, const ImVec2 & size, Im2DViewportFl
 	// 
 	const int current_frame = ImGui::GetCurrentContext()->FrameCount;
 	const bool first_begin_of_the_frame = (viewer->LastFrameActive != current_frame);
-	if (first_begin_of_the_frame) {
-		viewer->LastFrameActive = current_frame;
-	}
+
 
 	// set projection matrix to the viewer's content rectangle
 	viewer->projectionMatrix = glm::mat3(
 		1,     0,     0,
 		0,     1,     0,
-		contentRect.GetCenter().x , contentRect.GetCenter().y, 1
+		workRect.GetCenter().x , workRect.GetCenter().y, 1
 	);
 
 	// When reusing viewport again multiple times a frame, just append content (don't need to setup again)
 	if (first_begin_of_the_frame) {
 		// Control screen
-		ScreenControls("ViewerControls", contentRect.GetSize(), &(viewer->viewMatrix), flags & Im2DViewportFlags_AllowNonUniformZoom);
-
+		PanAndZoom("ViewerControls", &(viewer->viewMatrix), flags & Im2DViewportFlags_AllowNonUniformZoom);
+		//SelectAndMoveItems();
 		/* Render */
 		// add label at the top left corner
-		drawList->AddText(contentRect.Min, ImColor(255, 255, 255), label_id);
+		drawList->AddText(workRect.Min, ImColor(255, 255, 255), label_id);
 
 		// add adaptive grid
 		if (flags & Im2DViewportFlags_Grid)
@@ -183,6 +126,16 @@ void Im2D::BeginViewer(const char* label_id, const ImVec2 & size, Im2DViewportFl
 
 void Im2D::EndViewer() {
 	Im2DContext * ctx = GetCurrentContext();
+	const int current_frame = ImGui::GetCurrentContext()->FrameCount;
+
+	auto viewer = GetCurrentContext()->CurrentViewer;
+	const bool first_begin_of_the_frame = (viewer->LastFrameActive != current_frame);
+	if (first_begin_of_the_frame) {
+		viewer->LastFrameActive = current_frame;
+	}
+	if (first_begin_of_the_frame) {
+		SelectAndMoveItems();
+	}
 	ctx->CurrentViewer = nullptr;
 	ImGui::EndChild();
 }
@@ -251,4 +204,16 @@ void Im2D::Image(glm::vec2 pos, ImTextureID user_texture_id, const ImVec2& size,
 	auto screenSize = toScreen(bottomRight)- screenPos;
 	ImGui::SetCursorScreenPos(ImVec2(screenPos.x, screenPos.y));
 	ImGui::Image(user_texture_id, ImVec2(screenSize.x, screenSize.y), uv0, uv1, tint_col, border_col);
+}
+
+void Im2D::Item(const char * label_id, glm::vec2 * pos, bool * selected) {
+	// create items
+	auto item = Im2DItem(pos, selected);
+
+	// push to items list
+	auto ctx = Im2D::GetCurrentContext();
+	ctx->items.push_back(Im2DItem(pos, selected));
+
+	// display item
+	addPoint(*item.pos, *item.selected ? ImColor(255, 255, 255) : ImColor(128, 128, 128), 5.0f);
 }

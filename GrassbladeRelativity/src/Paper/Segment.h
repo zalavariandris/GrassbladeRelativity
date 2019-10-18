@@ -7,14 +7,24 @@ namespace Paper {
 	class Path;
 	class Segment
 	{
+	private:
+		friend class Path;
+		friend class Curve;
+
+		Path * mPath{ nullptr };
+		int mIndex = NAN;
+		glm::vec2 mPoint; // TODO: when set update path length
+		glm::vec2 mHandleIn;
+		glm::vec2 mHandleOut;
+
 	public:
+		//constrctors
 		Segment();
-
 		Segment(glm::vec2 point);
-
+		Segment(glm::vec2 point, glm::vec2 handle);
 		Segment(glm::vec2 point, glm::vec2 handleIn, glm::vec2 handleOut);
 
-		// shoud be private, but friends with curve and path
+		//accessors
 		glm::vec2 point() const;
 		void point(glm::vec2 val);
 
@@ -23,15 +33,6 @@ namespace Paper {
 
 		glm::vec2 handleOut() const;
 		void handleOut(glm::vec2 val);
-
-		int _index = NAN; //TODO shoud be private but friend with curve and path
-	private:
-		friend class Path;
-		friend class Curve;
-		const Path * _path{nullptr};
-		glm::vec2 _point; // TODO: when set update path length
-		glm::vec2 _handleIn;
-		glm::vec2 _handleOut;
 	};
 }
 

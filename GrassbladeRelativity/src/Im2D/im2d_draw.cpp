@@ -3,6 +3,8 @@
 #include "Im2D.h"
 #include "imgui_internal.h"
 #include <ostream>
+#include <vector>
+#include <algorithm>
 // Draw
 glm::vec2 toScreen(glm::vec2 P) {
 	Im2DContext * ctx = Im2D::GetCurrentContext();
@@ -176,4 +178,11 @@ void addBezierCurve(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D,
 	ImColor color, float thickness, int num_segments) {
 	ImGuiWindow * window = ImGui::GetCurrentWindow();
 	window->DrawList->AddBezierCurve(toScreen(A), toScreen(B), toScreen(C), toScreen(D), color, thickness, num_segments);
+}
+
+void addPolyline(const glm::vec2* points, const int points_count, ImU32 color, bool closed, float thickness) {
+	auto window = ImGui::GetCurrentWindow();
+	std::vector<ImVec2> screenPoints(points_count);
+	std::transform(points, points + points_count, screenPoints.begin(), toScreen);
+	window->DrawList->AddPolyline(screenPoints.data(), screenPoints.size(), color, closed, thickness);
 }

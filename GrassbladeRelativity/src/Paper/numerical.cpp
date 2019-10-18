@@ -1,5 +1,6 @@
 ﻿#include "numerical.h"
 #include <iostream>
+#include <algorithm> //min, max, max_element
 /*
 ported from paperjs, numerical.js
 */
@@ -82,7 +83,7 @@ double Numerical::clamp(double value, double min, double max) {
 double Numerical::getDiscriminant(double a, double b, double c) {
 	// d = b^2 - a * c  computed accurately enough by a tricky scheme.
 	// Ported from @hkrish's polysolve.c
-	auto split = [&](double v)->std::pair<double, double> {
+	auto split = [](double v)->std::pair<double, double> {
 		double x = v * 134217729;
 		double y = v - x;
 		double hi = y + x; // Don't optimize y away!
@@ -107,31 +108,13 @@ double Numerical::getDiscriminant(double a, double b, double c) {
 	return D;
 }
 
-double Numerical::getMax(std::vector<double> values) {
-	double norm = -std::numeric_limits<double>::infinity();
-	for (auto val : values) {
-		if (val > norm)
-			norm = val;
-	}
-	return norm;
-}
-
-double Numerical::getMin(std::vector<double> values) {
-	double norm = std::numeric_limits<double>::infinity();
-	for (auto val : values) {
-		if (val < norm)
-			norm = val;
-	}
-	return norm;
-}
-
 double Numerical::getNormalizationFactor(std::vector<double> values) {
 	// Normalize coefficients à la Jenkins & Traub's RPOLY.
 	// Normalization is done by scaling coefficients with a power of 2, so
 	// that all the bits in the mantissa remain unchanged.
 	// Use the infinity norm (max(sum(abs(a)…)) to determine the appropriate
 	// scale factor. See @hkrish in #1087#issuecomment-231526156
-	double norm = getMax(values);
+	double norm = *std::max_element(values.begin(), values.end());
 	return norm && (norm < 1e-8 || norm > 1e8)
 		? pow(2, -round(log2(norm)))
 		: 0;
@@ -367,7 +350,7 @@ int Numerical::solveCubic(double a, double b, double c, double d, std::vector<do
 		auto s = t < 0 ? -1 : 1;
 		auto td = -qd / a;
 		// See Kahan's notes on why 1.324718*... works.
-		auto rd = td > 0 ? 1.324717957244746 * getMax({ r, sqrt(td) }) : r;
+		auto rd = td > 0 ? 1.324717957244746 * std::max(r, sqrt(td)) : r;
 		auto x0 = x - s * rd;
 		if (x0 != x) {
 			do {

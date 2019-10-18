@@ -45,6 +45,9 @@
     <ClCompile Include="src\Widgets\Grapheditor.cpp" />
     <ClCompile Include="src\Widgets\Timeslider.cpp" />
     <ClCompile Include="src\Paper\Segment.cpp" />
+    <ClCompile Include="src\Im2DPaper\Im2DPaper.cpp" />
+    <ClCompile Include="src\Im2D\mousetools\selectandmove.cpp" />
+    <ClCompile Include="src\Im2D\mousetools\panandzoom.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -126,6 +129,13 @@
     <ClInclude Include="src\Widgets\Timeslider.hpp" />
     <ClInclude Include="src\Widgets\Grapheditor.hpp" />
     <ClInclude Include="src\examples\pathdemo.h" />
+    <ClInclude Include="src\Geo\Polygonh.h" />
+    <ClInclude Include="src\examples\polydemo.h" />
+    <ClInclude Include="src\Geo\Polygon.h" />
+    <ClInclude Include="src\examples\curvecoordsdemo.h" />
+    <ClInclude Include="src\examples\vieweritemsdemo.h" />
+    <ClInclude Include="src\Im2D\mousetools\selectandmove.h" />
+    <ClInclude Include="src\Im2D\mousetools\panandzoom.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

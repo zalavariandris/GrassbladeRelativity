@@ -1,8 +1,9 @@
 #pragma once
 #include "imgui.h"
 #include "glm/glm.hpp"
-
+#include <vector>
 typedef int Im2DViewportFlags;
+
 enum Im2DViewportFlags_
 {
 	Im2DViewportFlags_None = 0,
@@ -16,8 +17,19 @@ struct Im2DViewer {
 	int LastFrameActive = -1;
 };
 
+struct Im2DItem {
+	glm::vec2 * pos;
+	bool * selected;
+	Im2DItem(glm::vec2 * pos, bool * selected) :pos(pos), selected(selected) {};
+};
+
+enum Im2DItemsAction {
+	Im2DItemsAction_SELECT, Im2DItemsAction_MOVE
+};
+
 struct Im2DContext {
 	Im2DViewer * CurrentViewer;
+	std::vector<Im2DItem> items;
 };
 
 namespace Im2D {
@@ -36,6 +48,9 @@ namespace Im2D {
 	// get mouse delta respect to viewport scale
 	glm::vec2 GetMouseDelta();
 
+	// get mouse delta respect to viewport scale
+	glm::vec2 GetMouseDragDelta();
+
 	// Gizmos
 	bool InvisibleButton(const char * label_id, glm::vec2 pos, double width, double height);
 	bool Button(const char * label_id, glm::vec2 pos, double width, double height);
@@ -43,6 +58,7 @@ namespace Im2D {
 	bool DragBezierSegment(const char * str_id, glm::vec2 * A, glm::vec2 * B, glm::vec2 * C, glm::vec2 * D);
 	void Image(glm::vec2 center, ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 	// Items
+	void Item(const char * label_id, glm::vec2 * pos, bool * selected);
 
 }
 

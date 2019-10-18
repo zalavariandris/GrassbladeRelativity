@@ -6,6 +6,20 @@
 #include "CurveLocation.h"
 #include "basic/Point.h"
 #include "basic/Line.h"
+#include <algorithm> // min, max
+
+struct Hasher {
+	std::size_t operator()(const std::tuple<std::array<double, 8>, double, double>& key) const {
+		std::size_t h = 0;
+
+		for (auto e : std::get<0>(key)) {
+			h ^= std::hash<double>{}(e)+0x9e3779b9 + (h << 6) + (h >> 2);
+		}
+		h ^= std::hash<double>{}(std::get<1>(key)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		h ^= std::hash<double>{}(std::get<2>(key)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		return h;
+	};
+};
 
 namespace {
 	int solveCubic(std::array<double, 8> v, int coord, double val, std::vector<double> & roots, double minV, double maxV) {
@@ -123,51 +137,6 @@ namespace {
 }
 
 namespace Paper {
-	Curve::Curve() :_segment1(std::make_shared<Segment>()), _segment2(std::make_shared<Segment>()) {
-		_segment1->_path = path;
-		_segment2->_path = path;
-	};
-
-	Curve::Curve(std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2) : _segment1(segment1), _segment2(segment2) {
-		_segment1->_path = path;
-		_segment2->_path = path;
-	};
-
-	Curve::Curve(Path * path, std::shared_ptr<Segment> segment1, std::shared_ptr<Segment> segment2) : path(path), _segment1(segment1), _segment2(segment2) {
-		_segment1->_path = path;
-		_segment2->_path = path;
-	};
-
-	bool Curve::isStraight(glm::vec2 const & p1, glm::vec2 const & h1, glm::vec2 const & h2, glm::vec2 const & p2) {
-		if (Point::isZero(h1) && Point::isZero(h2)) {
-			// no handles
-			return true;
-		}
-		else {
-			auto v = p2 - p1;
-			if (Point::isZero(v)) {
-				// Zero-length line, with some handles defined.
-				return false;
-			}
-			else if (Point::isCollinear(v, h1) && Point::isCollinear(v, h2)) {
-				// Collinear handles: In addition to v.isCollinear(h) checks, we
-				// need to measure the distance to the line, in order to be able
-				// to use the same epsilon as in Curve#getTimeOf(), see #1066.
-				Line l(p1, p2);
-				auto epsilon = Numerical::GEOMETRIC_EPSILON;
-				if (l.getDistance(p1 + h1) < epsilon &&
-					l.getDistance(p2 + h2) < epsilon) {
-					// Project handles onto line to see if they are in range:
-
-					auto div = glm::dot(v, v);;
-					auto s1 = glm::dot(v, h1) / div;
-					auto s2 = glm::dot(v, h2) / div;
-					return s1 >= 0 && s1 <= 1 && s2 <= 0 && s2 >= -1;
-				}
-			}
-		}
-		return false;
-	}
 	bool Curve::evaluate2(std::array<double, 8> const & v, double t, glm::vec2 * point, bool normalized, glm::vec2 * tangent, glm::vec2 * normal, double * curvature) {
 		// Do not produce results if parameter is out of range or invalid.
 		if (isnan(t) || t < 0 || t > 1)
@@ -274,22 +243,150 @@ namespace Paper {
 		return true;
 	}
 
+
+	bool Curve::isStraight(glm::vec2 const & p1, glm::vec2 const & h1, glm::vec2 const & h2, glm::vec2 const & p2) {
+		if (Point::isZero(h1) && Point::isZero(h2)) {
+			// no handles
+			return true;
+		}
+		else {
+			auto v = p2 - p1;
+			if (Point::isZero(v)) {
+				// Zero-length line, with some handles defined.
+				return false;
+			}
+			else if (Point::isCollinear(v, h1) && Point::isCollinear(v, h2)) {
+				// Collinear handles: In addition to v.isCollinear(h) checks, we
+				// need to measure the distance to the line, in order to be able
+				// to use the same epsilon as in Curve#getTimeOf(), see #1066.
+				Line l(p1, p2);
+				auto epsilon = Numerical::GEOMETRIC_EPSILON;
+				if (l.getDistance(p1 + h1) < epsilon &&
+					l.getDistance(p2 + h2) < epsilon) {
+					// Project handles onto line to see if they are in range:
+
+					auto div = glm::dot(v, v);;
+					auto s1 = glm::dot(v, h1) / div;
+					auto s2 = glm::dot(v, h2) / div;
+					return s1 >= 0 && s1 <= 1 && s2 <= 0 && s2 >= -1;
+				}
+			}
+		}
+		return false;
+	}
+
+	std::function<double(double)> Curve::getLengthIntegrand() const {
+		const auto v = getValues();
+		const double x0 = v[0]; const double y0 = v[1];
+		const double x1 = v[2]; const double y1 = v[3];
+		const double x2 = v[4]; const double y2 = v[5];
+		const double x3 = v[6]; const double y3 = v[7];
+
+		// Calculate the coefficients of a Bezier derivative.
+		double ax = 9 * (x1 - x2) + 3 * (x3 - x0);
+		double bx = 6 * (x0 + x2) - 12 * x1;
+		double cx = 3 * (x1 - x0);
+
+		double ay = 9 * (y1 - y2) + 3 * (y3 - y0);
+		double by = 6 * (y0 + y2) - 12 * y1;
+		double cy = 3 * (y1 - y0);
+
+		return [=](double t)->double {
+			// Calculate quadratic equations of derivatives for x and y
+			double dx = (ax * t + bx) * t + cx;
+			double dy = (ay * t + by) * t + cy;
+			return sqrt(dx * dx + dy * dy);
+		};
+	}
+
+	// Amount of integral evaluations for the interval 0 <= a < b <= 1
+	int Curve::getIterations(double a, double b) const {
+		// Guess required precision based and size of range...
+		// TODO: There should be much better educated guesses for
+		// this. Also, what does this depend on? Required precision?
+		
+		return std::max(2, std::min(16, (int)ceil(abs(b - a) * 32)) );
+	}
+
+	// Constructors
+	Curve::Curve() {};
+
+	Curve::Curve(Segment * segment1, Segment * segment2) :
+		mSegment1(segment1),
+		mSegment2(segment2) {};
+
+	Curve::Curve(Path * path, Segment * segment1, Segment * segment2) :
+		mPath(path),
+		mSegment1(segment1),
+		mSegment2(segment2) {};
+
+	Curve::Curve(double x1, double y1, double handle1x, double handle1y, double handle2x, double handle2y, double x2, double y2) {
+		glm::vec2 point1(x1, y1);
+		glm::vec2 point2(x2, y2);
+		glm::vec2 handle1(handle1x - x1, handle1y-y1);
+		glm::vec2 handle2(handle2x-x2, handle2x-y2);
+
+		mSegment1 = new Segment(point1, glm::vec2(0, 0), handle1);
+		mSegment2 = new Segment(point2, handle2, glm::vec2(0, 0));
+	}
+
+	Curve::~Curve() {
+		//assert(mPath == mSegment1->mPath && mPath == mSegment2->mPath);
+		if (mSegment1->mPath == nullptr) {
+			delete mSegment1;
+		}
+		if(mSegment2->mPath == nullptr){
+			delete mSegment2;
+		}
+	};
+
+	// accessors
+	Segment * Curve::segment1() {
+		return mSegment1;
+	}
+
+	const Segment * Curve::segment1() const {
+		return mSegment1;
+	}
+
+	Segment * Curve::segment2() {
+		return mSegment2;
+	}
+
+	const Segment * Curve::segment2() const {
+		return mSegment2;
+	}
+
+	const std::array<double, 8> Curve::getValues() const {
+		const glm::vec2 & p1 = mSegment1->point();
+		const glm::vec2 & h1 = mSegment1->handleOut();
+		const glm::vec2 & h2 = mSegment2->handleIn();
+		const glm::vec2 & p2 = mSegment2->point();
+
+		return {
+			p1.x, p1.y,
+			p1.x + h1.x, p1.y + h1.y,
+			p2.x + h2.x, p2.y + h2.y,
+			p2.x, p2.y
+		};
+	}
+
 	bool Curve::isStraight() const{
-		return Curve::isStraight(_segment1->point(), _segment1->handleOut(), _segment2->handleIn(), _segment2->point());
+		return Curve::isStraight(mSegment1->point(), mSegment1->handleOut(), mSegment2->handleIn(), mSegment2->point());
 	}
 
 	bool Curve::isLinear() const{
 		glm::vec2 p1, h1, h2, p2;
-		p1 = _segment1->point();
-		h1 = _segment1->handleOut();
-		h2 = _segment2->handleIn();
-		p2 = _segment2->point();
+		p1 = mSegment1->point();
+		h1 = mSegment1->handleOut();
+		h2 = mSegment2->handleIn();
+		p2 = mSegment2->point();
 		glm::vec2 third = (p2-p1)/3.0;
 		return h1 == third && h2 == -third;
 	}
 
-	Line Curve::getLine() const {
-		return Line(_segment1->point(), _segment2->point());
+	const Line Curve::getLine() const {
+		return Line(mSegment1->point(), mSegment2->point());
 	}
 
 	bool Curve::isCollinear(Curve const & curve) const {
@@ -298,8 +395,8 @@ namespace Paper {
 	}
 
 	bool Curve::hasHandles() const {
-		return !Point::isZero(_segment1->handleOut())
-			|| !Point::isZero(_segment2->handleIn());
+		return !Point::isZero(mSegment1->handleOut())
+			|| !Point::isZero(mSegment2->handleIn());
 	}
 
 	glm::vec2 Curve::getPointAtTime(double t) const {
@@ -398,38 +495,33 @@ namespace Paper {
 		return minT;
 	}
 
-	std::function<double(double)> Curve::getLengthIntegrand() const {
-		auto & v = getValues();
-		const double x0 = v[0]; const double y0 = v[1];
-		const double x1 = v[2]; const double y1 = v[3];
-		const double x2 = v[4]; const double y2 = v[5];
-		const double x3 = v[6]; const double y3 = v[7];
+	std::pair<Curve, Curve> Curve::subdivide(double t) const {
+		auto v = getValues();
+		auto x0 = v[0]; auto y0 = v[1];
+		auto x1 = v[2]; auto y1 = v[3];
+		auto x2 = v[4]; auto y2 = v[5];
+		auto x3 = v[6]; auto y3 = v[7];
+		if (t == NAN) {
+			t = 0.5;
+		}
 
-		// Calculate the coefficients of a Bezier derivative.
-		double ax = 9 * (x1 - x2) + 3 * (x3 - x0);
-		double bx = 6 * (x0 + x2) - 12 * x1;
-		double cx = 3 * (x1 - x0);
-
-		double ay = 9 * (y1 - y2) + 3 * (y3 - y0);
-		double by = 6 * (y0 + y2) - 12 * y1;
-		double cy = 3 * (y1 - y0);
-
-		return [=](double t)->double {
-			// Calculate quadratic equations of derivatives for x and y
-			double dx = (ax * t + bx) * t + cx;
-			double dy = (ay * t + by) * t + cy;
-			return sqrt(dx * dx + dy * dy);
+		// Triangle computation, with loops unrolled.
+		auto u = 1 - t;
+			// Interpolate from 4 to 3 points
+		auto x4 = u * x0 + t * x1; auto y4 = u * y0 + t * y1;
+		auto x5 = u * x1 + t * x2; auto y5 = u * y1 + t * y2;
+		auto x6 = u * x2 + t * x3; auto y6 = u * y2 + t * y3;
+			// Interpolate from 3 to 2 points
+		auto x7 = u * x4 + t * x5; auto y7 = u * y4 + t * y5;
+		auto x8 = u * x5 + t * x6; auto y8 = u * y5 + t * y6;
+			// Interpolate from 2 points to 1 point
+		auto x9 = u * x7 + t * x8; auto y9 = u * y7 + t * y8;
+		// We now have all the values we need to build the sub-curves:
+		return{
+			Curve(x0, y0, x4, y4, x7, y7, x9, y9), // left
+			Curve(x9, y9, x8, y8, x6, y6, x3, y3) // right
 		};
-	}
-
-	// Amount of integral evaluations for the interval 0 <= a < b <= 1
-	int Curve::getIterations(double a, double b) const {
-		// Guess required precision based and size of range...
-		// TODO: There should be much better educated guesses for
-		// this. Also, what does this depend on? Required precision?
-
-		return Numerical::getMax({ 2, Numerical::getMin({ 16, ceil(abs(b - a) * 32) }) });
-	}
+	};
 
 	double Curve::getLength(double a, double b) const {
 		return getLength(a, b, getLengthIntegrand());
@@ -439,26 +531,19 @@ namespace Paper {
 		if (isStraight()) {
 			// Sub-divide the linear curve at a and b, so we can simply
 			// calculate the Pythagorean Theorem to get the range's length.
-			if (b < 1 || a>0) {
-				throw "get straight range length is not implemented yet !!!";
+			auto c = this;// clone this curve
+			if (b < 1) {
+				auto c = subdivide(b).first; // left
+				a /= b;
+			}
+			if (a > 0) {
+				auto c = subdivide(a).second; // right
 			}
 
 			// The length of straight curves can be calculated more easily.
-			auto & v = getValues();
-			auto dx = v[6] - v[0]; // x3 - x0
-			auto dy = v[7] - v[1]; // y3 - y0
-			return sqrt(dx * dx + dy * dy);
+			return glm::distance(c->mSegment2->point(), c->mSegment1->point());
 		}
 		return Numerical::integrate(ds, a, b, getIterations(a, b));
-	}
-
-	void Curve::draw() const {
-		const int segments{ 8 };
-		for (int i = 0; i < segments; i++) {
-			glm::vec2 P1 = getPointAtTime((double)i / segments);
-			glm::vec2 P2 = getPointAtTime(((double)i + 1) / segments);
-			ofDrawLine(P1, P2);
-		};
 	}
 
 	CurveLocation Curve::getLocationAtTime(double t) const {
@@ -525,9 +610,11 @@ namespace Paper {
 		auto forward = offset > 0;
 		auto a = forward ? start : 0;
 		auto b = forward ? 1 : start;
+
 		// Use integrand to calculate both range length and part
 		// lengths in f(t) below.
 		auto ds = getLengthIntegrand();
+
 		// Get length of total range
 		auto rangeLength = getLength(a, b, ds);
 		auto diff = abs(offset) - rangeLength;
@@ -558,26 +645,5 @@ namespace Paper {
 		// NOTE: guess is a negative value when looking backwards.
 		return Numerical::findRoot(f, ds, start + guess, a, b, 32,
 			/*#=*/Numerical::EPSILON);
-	}
-
-	const std::array<double, 8> Curve::getValues() const {
-		const glm::vec2 & p1 = _segment1->point();
-		const glm::vec2 & h1 = _segment1->handleOut();
-		const glm::vec2 & h2 = _segment2->handleIn();
-		const glm::vec2 & p2 = _segment2->point();
-		//double x1 = p1.x; double y1 = p1.y;
-		//double x2 = p2.x; double y2 = p2.y;
-
-		return {
-			p1.x, p1.y,
-			p1.x + h1.x, p1.y + h1.y,
-			p2.x + h2.x, p2.y + h2.y,
-			p2.x, p2.y
-		};
-	}
-
-	void Curve::_changed() {
-		LengthNeedsUpdate = true;
-		BoundsNeedsUpdate = true;
 	}
 }

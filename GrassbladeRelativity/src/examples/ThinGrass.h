@@ -24,13 +24,13 @@ public:
 		
 
 		sourcePath.add({
-			std::make_shared<Paper::Segment>(glm::vec2(250,0),glm::vec2(0, 0), glm::vec2(20, 175)),
-			std::make_shared<Paper::Segment>(glm::vec2(250, 500), glm::vec2(20, -175), glm::vec2(0, 0))
+			Paper::Segment(glm::vec2(250,0),glm::vec2(0, 0), glm::vec2(20, 175)),
+			Paper::Segment(glm::vec2(250, 500), glm::vec2(20, -175), glm::vec2(0, 0))
 			});
 
 		targetPath.add({
-			std::make_shared<Paper::Segment>(glm::vec2(250,0),glm::vec2(0, 0), glm::vec2(20, 175)),
-			std::make_shared<Paper::Segment>(glm::vec2(250, 500), glm::vec2(20, -175), glm::vec2(0, 0))
+			Paper::Segment(glm::vec2(250,0),glm::vec2(0, 0), glm::vec2(20, 175)),
+			Paper::Segment(glm::vec2(250, 500), glm::vec2(20, -175), glm::vec2(0, 0))
 			});
 
 

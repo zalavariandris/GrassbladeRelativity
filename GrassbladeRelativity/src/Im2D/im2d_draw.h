@@ -14,7 +14,7 @@ void addLineSegment(const glm::vec2 & A, const glm::vec2 & B, ImColor color = Im
 void addText(glm::vec2 P, const char * fmt, ...);
 
 //
-void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color, float thickness = 1.0);
+void addArrow(const glm::vec2 & A, const glm::vec2 & B, ImColor color=ImColor(255,255,255), float thickness = 1.0);
 
 void addAdaptiveGrid();
 
@@ -26,3 +26,5 @@ void addBezierCurve(glm::vec2 A, glm::vec2 B, glm::vec2 C, glm::vec2 D,
 	ImColor color = ImColor(255, 255, 255), float thickness = 1.0, int num_segments = 0);
 
 void addRect(glm::vec2 center, float width, float height, ImColor color=ImColor(255,255,255), float thickness=1.0);
+
+void addPolyline(const glm::vec2* points, const int points_count, ImU32 color = ImColor(255, 255, 255), bool closed = false, float thickness = 1.0);

@@ -5,12 +5,20 @@
 #include <glm/ext.hpp>
 #include <iostream>
 #include <algorithm> // transform
+
 // Mouse Tool
 enum MouseTool {
 	SelectAndMoveTool
 };
 
 bool SelectAndMove(std::vector<Animation::AnimationCurve*> curves) {
+	//std::vector<Im2DItem> items;
+	//for (auto curve : curves) {
+	//	for (auto key : curve->keys()) {
+	//		items.push_back()
+	//	}
+	//}
+
 	// Helpers
 	// get a single key at specified coordinates
 	auto getKeyAtCoords = [&](glm::vec2 coords, double tolerance = 10)->Animation::Keyframe* {
@@ -175,15 +183,6 @@ bool SelectAndMove(std::vector<Animation::AnimationCurve*> curves) {
 				}
 			}
 
-			//glm::vec2 delta = Im2D::GetMouseDelta();
-			//for (Animation::AnimationCurve * curve : curves) {
-			//	for (auto & key : curve->keys()) {
-			//		if (key.selected) {
-			//			key.time(key.time() + delta.x);
-			//			key.value(key.value() + delta.y);
-			//		}
-			//	}
-			//}
 			changed = true;
 		}
 

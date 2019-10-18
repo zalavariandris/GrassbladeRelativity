@@ -8,13 +8,86 @@
 #include "ofGraphics.h"
 #include "ofAppRunner.h" //ofGetWidth(), ofGetHeight()
 
+#include "Geo/Polygon.h"
+
 Paper::Path extend(Paper::Path path, double length) {
-	Paper::Path newPath{ path };
-	auto firstLocation = newPath.getLocationAtTime(0);
-	auto lastLocation = newPath.getLocationAtTime(1.0);
-	newPath.insert(0, std::make_shared<Paper::Segment>(firstLocation._point - firstLocation._tangent*length));
-	newPath.add(std::make_shared<Paper::Segment>(lastLocation._point + lastLocation._tangent*length));
-	return newPath;
+	auto firstLocation = path.getLocationAtTime(0);
+	auto lastLocation = path.getLocationAtTime(1.0);
+	path.insert(0, Paper::Segment(firstLocation.point() - firstLocation.tangent()*length));
+	path.add(Paper::Segment(lastLocation.point() + lastLocation.tangent()*length));
+	return path;
+}
+
+std::vector<glm::vec2> divide(Paper::Path const & path, int count, bool weighted) {
+	std::vector<glm::vec2> points;
+	double length = path.getLength();
+	points.reserve(count);
+	for (auto i = 0; i <= count; i++) {
+		points.push_back(weighted ? path.getPointAt(double(i)/count * length) : path.getPointAtTime((double)i / count));
+	}
+	return points;
+}
+
+namespace Field {
+	glm::vec2 pathToRect(Paper::Path const & path, glm::vec2 uv) {
+		double distance = uv.x;
+		double t = uv.y;
+
+		auto loc = path.getLocationAtTime(t);
+		glm::vec2 P = loc.point();
+		glm::vec2 normal = loc.normal();
+
+		glm::vec2 xy = P + normal * distance;
+		return xy;
+	}
+
+	glm::vec2 rectToPath(Paper::Path const & path, glm::vec2 xy) {
+		double t = path.getNearestTime(xy);
+		
+		auto loc = path.getLocationAtTime(t);
+		glm::vec2 P = loc.point();
+		glm::vec2 normal = loc.normal();
+
+		double distance = glm::distance(xy, P);
+		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
+		distance = dot > 0 ? distance : -distance;
+		glm::vec2 uv(distance, t);
+		return uv;
+	}
+
+	glm::vec2 pathToPath(Paper::Path const & source, Paper::Path const & target, glm::vec2 P0) {
+		return pathToRect(target, rectToPath(source, P0));
+	}
+
+	// Polygon
+	glm::vec2 polyToRect(Geo::Polygon const & poly, glm::vec2 uv) {
+		double distance = uv.x;
+		double t = uv.y;
+
+		glm::vec2 P = poly.getPointAtTime(t);
+		glm::vec2 normal = poly.getNormalAtIndex(t*poly.getVertices().size());
+
+		glm::vec2 xy = P + normal * distance;
+		return xy;
+	}
+
+	glm::vec2 rectToPoly(Geo::Polygon const & poly, glm::vec2 xy) {
+		double t = (double)poly.getNearestIndex(xy) / poly.getVertices().size();
+
+		double offset = t * poly.getLength();
+		glm::vec2 P = poly.getPointAt(t*poly.getLength());
+		glm::vec2 normal = poly.getNormalAtIndex(t*poly.getVertices().size());
+
+		double distance = glm::distance(xy, P);
+		double dot = glm::dot(glm::normalize(xy - P), glm::normalize(normal));
+		distance = dot > 0 ? distance : -distance;
+		glm::vec2 uv(distance, t);
+		return uv;
+	}
+
+	glm::vec2 polyToPoly(Geo::Polygon & source, Geo::Polygon & target, glm::vec2 P0) {
+		return polyToRect(target, rectToPoly(source, P0));
+	}
 }
 
 void Utils::ofSyncCameraToViewport(ofCamera & camera) {
@@ -71,10 +144,10 @@ void Utils::ofDraw(Paper::Path path, bool verbose) {
 	};
 
 	if (verbose) {
-		for (auto segment : path.getSegments()) {
-			ofDrawCircle(segment->point(), 2.0);
-			ofDrawLine(segment->point(), segment->point() + segment->handleIn());
-			ofDrawLine(segment->point(), segment->point() + segment->handleOut());
+		for (auto const & segment : path.getSegments()) {
+			ofDrawCircle(segment.point(), 2.0);
+			ofDrawLine(segment.point(), segment.point() + segment.handleIn());
+			ofDrawLine(segment.point(), segment.point() + segment.handleOut());
 		}
 	}
 }
